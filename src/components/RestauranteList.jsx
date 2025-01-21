@@ -20,14 +20,15 @@ const RestauranteList = () => {
 
   const cargarRestaurantes = async () => {
     try {
-      const response = await api.get("/restaurantes");
-      console.log("Datos recibidos:", response.data);
+      const response = await api.get('/restaurantes');
+      console.log('Datos recibidos:', response.data);
       setRestaurantes(response.data);
       setFilteredRestaurantes(response.data);
     } catch (error) {
-      console.error("Error al cargar restaurantes:", error);
+      console.error('Error al cargar restaurantes:', error);
     }
   };
+  
 
   const aplicarFiltros = useCallback(() => {
     let filtered = [...restaurantes];
@@ -74,39 +75,35 @@ const RestauranteList = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     try {
       const dataToSend = {
-        nombre: formData.Nombre,
-        tipoCocina: formData["Tipo de cocina"],
-        localizacion: formData["Localización"],
-        fechasVisita: formData.Fecha ? [formData.Fecha] : [],
+        Nombre: formData.Nombre,
+        'Tipo de cocina': formData['Tipo de cocina'],
+        'Localización': formData['Localización'],
+        Fecha: formData.Fecha || '', // Si no hay fecha, se envía como vacío
       };
-
-      console.log("Datos a enviar normalizados:", dataToSend);
-
+  
+      console.log('Datos a enviar:', dataToSend);
+  
       if (isEditing && editingId) {
-        console.log("Editando restaurante con ID:", editingId);
-        const response = await api.put(
-          `/restaurantes/${editingId}`,
-          dataToSend
-        );
-        console.log("Respuesta de edición:", response.data);
+        console.log('Editando restaurante con ID:', editingId);
+        const response = await api.put(`/restaurantes/${editingId}`, dataToSend);
+        console.log('Respuesta de edición:', response.data);
       } else {
-        console.log("Creando nuevo restaurante");
-        const response = await api.post("/restaurantes", dataToSend);
-        console.log("Respuesta de creación:", response.data);
+        console.log('Creando nuevo restaurante');
+        const response = await api.post('/restaurantes', dataToSend);
+        console.log('Respuesta de creación:', response.data);
       }
-
+  
       await cargarRestaurantes();
       resetForm();
     } catch (error) {
-      console.error("Error detallado:", error);
-      console.error("Datos de la respuesta:", error.response?.data);
+      console.error('Error detallado:', error);
       alert(`Error: ${error.response?.data?.message || error.message}`);
     }
   };
-
+  
   const handleDelete = async (id) => {
     if (window.confirm("¿Estás seguro de querer eliminar este restaurante?")) {
       try {
