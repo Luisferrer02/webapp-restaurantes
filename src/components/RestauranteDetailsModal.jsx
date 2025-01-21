@@ -17,6 +17,9 @@ const RestauranteDetailsModal = ({
   // Estados para el sub-modal de registrar visita con comentario
   const [isRegisteringVisit, setIsRegisteringVisit] = useState(false);
   const [comentario, setComentario] = useState("");
+  const [fechaVisita, setFechaVisita] = useState(
+    new Date().toISOString().split("T")[0]
+  );
 
   useEffect(() => {
     if (restauranteId && isOpen) {
@@ -42,20 +45,21 @@ const RestauranteDetailsModal = ({
       setImagen("");
       setIsRegisteringVisit(false);
       setComentario("");
+      setFechaVisita(new Date().toISOString().split("T")[0]);
     }
   }, [restauranteId, isOpen]);
 
   const handleUpdate = async () => {
     try {
       const dataToSend = { Descripcion: descripcion };
-      
+
       // Solo agregar 'Imagen' si no está vacío
-      if (imagen.trim() !== '') {
+      if (imagen.trim() !== "") {
         dataToSend.Imagen = imagen;
       }
-  
-      console.log('Datos a enviar para actualización:', dataToSend);
-  
+
+      console.log("Datos a enviar para actualización:", dataToSend);
+
       const response = await api.put(
         `/restaurantes/${restauranteId}`,
         dataToSend
@@ -66,24 +70,41 @@ const RestauranteDetailsModal = ({
       onClose(); // Cierra el modal después de actualizar
     } catch (error) {
       console.error("Error al actualizar:", error);
-      
+
       // Manejo detallado de errores de validación
       if (error.response && error.response.data && error.response.data.errors) {
-        const errorMessages = error.response.data.errors.map(err => err.msg).join('\n');
+        const errorMessages = error.response.data.errors
+          .map((err) => err.msg)
+          .join("\n");
         alert(`Errores de validación:\n${errorMessages}`);
-      } else if (error.response && error.response.data && error.response.data.message) {
+      } else if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
         alert(`Error: ${error.response.data.message}`);
       } else {
         alert(`Error: ${error.message}`);
       }
     }
   };
-  
+
+  const visitas = restaurante?.fechasVisita?.map((fecha, index) => ({
+    fecha,
+    comentario: restaurante.comentariosVisita.find(
+      (coment) =>
+        new Date(coment.fecha).toISOString() ===
+        new Date(fecha).toISOString()
+    )?.comentario || "Sin comentario",
+  })) || [];
 
   // Función para registrar una visita con comentario
   const handleRegisterVisit = async () => {
     try {
-      const dataToSend = { Comentario: comentario };
+      const dataToSend = {
+        Comentario: comentario,
+        Fecha: fechaVisita,
+      };
       const response = await api.put(
         `/restaurantes/${restauranteId}/visita`,
         dataToSend
@@ -92,7 +113,8 @@ const RestauranteDetailsModal = ({
       setRestaurante(response.data);
       setIsRegisteringVisit(false);
       setComentario("");
-      onUpdate(); // Actualiza la lista de restaurantes en el componente padre
+      setFechaVisita(new Date().toISOString().split("T")[0]);
+      onUpdate();
     } catch (error) {
       console.error("Error al registrar la visita:", error);
       alert(
@@ -104,7 +126,6 @@ const RestauranteDetailsModal = ({
   };
 
   if (!isOpen) return null;
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -135,8 +156,8 @@ const RestauranteDetailsModal = ({
             </p>
             <h3>Visitas:</h3>
             <ul className="visit-list">
-              {restaurante.visitas.length > 0 ? (
-                restaurante.visitas.map((visita, index) => (
+              {visitas.length > 0 ? (
+                visitas.map((visita, index) => (
                   <li key={index}>
                     {new Date(visita.fecha).toLocaleDateString()} -{" "}
                     {visita.comentario || "Sin comentario"}
@@ -146,6 +167,7 @@ const RestauranteDetailsModal = ({
                 <li>No hay visitas registradas</li>
               )}
             </ul>
+
             {/* Botón para registrar una visita con comentario */}
             <button
               className="btn btn-primary"
@@ -164,6 +186,12 @@ const RestauranteDetailsModal = ({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <h3>Registrar Visita</h3>
+                  <input
+                    type="date"
+                    value={fechaVisita}
+                    onChange={(e) => setFechaVisita(e.target.value)}
+                    className="input"
+                  />
                   <textarea
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
