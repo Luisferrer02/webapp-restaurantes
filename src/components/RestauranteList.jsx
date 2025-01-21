@@ -10,7 +10,8 @@ const RestauranteList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [tiposCocina, setTiposCocina] = useState([]);
   const [localizaciones, setLocalizaciones] = useState([]);
-  const [showLocalizacionDropdown, setShowLocalizacionDropdown] = useState(false);
+  const [showLocalizacionDropdown, setShowLocalizacionDropdown] =
+    useState(false);
   const [selectedLocalizacion, setSelectedLocalizacion] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRestauranteId, setSelectedRestauranteId] = useState(null);
@@ -54,9 +55,15 @@ const RestauranteList = () => {
 
     const sorted = [...filteredRestaurantes].sort((a, b) => {
       const dateA =
-        a.fechasVisita?.length > 0 ? new Date(a.fechasVisita[a.fechasVisita.length - 1]) : new Date(0);
+        a.visitas?.length > 0
+          ? new Date(a.visitas[a.visitas.length - 1].fecha)
+          : new Date(0);
+
       const dateB =
-        b.fechasVisita?.length > 0 ? new Date(b.fechasVisita[b.fechasVisita.length - 1]) : new Date(0);
+        b.visitas?.length > 0
+          ? new Date(b.visitas[b.visitas.length - 1].fecha)
+          : new Date(0);
+
       return order === "asc" ? dateA - dateB : dateB - dateA;
     });
     setFilteredRestaurantes(sorted);
@@ -433,7 +440,7 @@ const RestauranteList = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         restauranteId={selectedRestauranteId}
-        onUpdate={() => cargarRestaurantes()}
+        onUpdate={() => cargarRestaurantes()} // Recarga la lista de restaurantes
       />
     </div>
   );

@@ -20,6 +20,8 @@ const RestauranteDetailsModal = ({
   const [fechaVisita, setFechaVisita] = useState(
     new Date().toISOString().split("T")[0]
   );
+  const [isEditingVisits, setIsEditingVisits] = useState(false);
+  const [editableVisits, setEditableVisits] = useState([]);
 
   useEffect(() => {
     if (restauranteId && isOpen) {
@@ -30,6 +32,9 @@ const RestauranteDetailsModal = ({
           setRestaurante(response.data);
           setDescripcion(response.data.Descripcion || "");
           setImagen(response.data.Imagen || "");
+          setEditableVisits(
+            response.data.visitas.map((visit) => ({ ...visit })) || []
+          );
         } catch (error) {
           console.error("Error al cargar detalles del restaurante:", error);
           alert("Error al cargar detalles del restaurante.");
@@ -46,6 +51,8 @@ const RestauranteDetailsModal = ({
       setIsRegisteringVisit(false);
       setComentario("");
       setFechaVisita(new Date().toISOString().split("T")[0]);
+      setIsEditingVisits(false);
+      setEditableVisits([]);
     }
   }, [restauranteId, isOpen]);
 
@@ -89,14 +96,16 @@ const RestauranteDetailsModal = ({
     }
   };
 
-  const visitas = restaurante?.fechasVisita?.map((fecha, index) => ({
-    fecha,
-    comentario: restaurante.comentariosVisita.find(
-      (coment) =>
-        new Date(coment.fecha).toISOString() ===
-        new Date(fecha).toISOString()
-    )?.comentario || "Sin comentario",
-  })) || [];
+ /* const visitas =
+    restaurante?.fechasVisita?.map((fecha, index) => ({
+      fecha,
+      comentario:
+        restaurante.comentariosVisita.find(
+          (coment) =>
+            new Date(coment.fecha).toISOString() ===
+            new Date(fecha).toISOString()
+        )?.comentario || "Sin comentario",
+    })) || [];*/
 
   // Función para registrar una visita con comentario
   const handleRegisterVisit = async () => {
@@ -105,16 +114,22 @@ const RestauranteDetailsModal = ({
         Comentario: comentario,
         Fecha: fechaVisita,
       };
-      const response = await api.put(
-        `/restaurantes/${restauranteId}/visita`,
-        dataToSend
-      );
+      await api.put(`/restaurantes/${restauranteId}/visita`, dataToSend);
       alert("Visita registrada correctamente");
-      setRestaurante(response.data);
+
+      // Refresca los datos del restaurante
+      const updatedRestaurante = await api.get(
+        `/restaurantes/${restauranteId}`
+      );
+      setRestaurante(updatedRestaurante.data);
+      setEditableVisits(
+        updatedRestaurante.data.visitas.map((visit) => ({ ...visit }))
+      );
+
       setIsRegisteringVisit(false);
       setComentario("");
       setFechaVisita(new Date().toISOString().split("T")[0]);
-      onUpdate();
+      onUpdate(); // Notifica al componente principal para recargar la lista
     } catch (error) {
       console.error("Error al registrar la visita:", error);
       alert(
@@ -123,6 +138,38 @@ const RestauranteDetailsModal = ({
         }`
       );
     }
+  };
+
+  const handleEditVisits = () => {
+    setIsEditingVisits(true);
+  };
+
+  const handleSaveVisits = async () => {
+    try {
+      const response = await api.put(
+        `/restaurantes/${restauranteId}/actualizar-visitas`,
+        { visitas: editableVisits }
+      );
+      alert("Visitas actualizadas correctamente");
+      setRestaurante(response.data);
+      setIsEditingVisits(false);
+      onUpdate();
+    } catch (error) {
+      console.error("Error al guardar las visitas:", error);
+      alert(
+        `Error al guardar las visitas: ${
+          error.response?.data?.message || error.message
+        }`
+      );
+    }
+  };
+
+  const handleVisitChange = (index, field, value) => {
+    setEditableVisits((prev) => {
+      const updated = [...prev];
+      updated[index][field] = value;
+      return updated;
+    });
   };
 
   if (!isOpen) return null;
@@ -155,18 +202,57 @@ const RestauranteDetailsModal = ({
               {restaurante.Descripcion || "No hay descripción."}
             </p>
             <h3>Visitas:</h3>
-            <ul className="visit-list">
-              {visitas.length > 0 ? (
-                visitas.map((visita, index) => (
-                  <li key={index}>
-                    {new Date(visita.fecha).toLocaleDateString()} -{" "}
-                    {visita.comentario || "Sin comentario"}
-                  </li>
-                ))
-              ) : (
-                <li>No hay visitas registradas</li>
-              )}
-            </ul>
+            {!isEditingVisits ? (
+              <>
+                <ul className="visit-list">
+                  {editableVisits.length > 0 ? (
+                    editableVisits.map((visita, index) => (
+                      <li key={index}>
+                        {new Date(visita.fecha).toLocaleDateString()} -{" "}
+                        {visita.comentario || "Sin comentario"}
+                      </li>
+                    ))
+                  ) : (
+                    <li>No hay visitas registradas</li>
+                  )}
+                </ul>
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleEditVisits}
+                >
+                  Editar Visitas
+                </button>
+              </>
+            ) : (
+              <>
+                <ul className="visit-edit-list">
+                  {editableVisits.map((visita, index) => (
+                    <li key={index} className="visit-edit-item">
+                      <input
+                        type="date"
+                        value={
+                          new Date(visita.fecha).toISOString().split("T")[0]
+                        }
+                        onChange={(e) =>
+                          handleVisitChange(index, "fecha", e.target.value)
+                        }
+                        className="input"
+                      />
+                      <textarea
+                        value={visita.comentario}
+                        onChange={(e) =>
+                          handleVisitChange(index, "comentario", e.target.value)
+                        }
+                        className="textarea"
+                      />
+                    </li>
+                  ))}
+                </ul>
+                <button className="btn btn-primary" onClick={handleSaveVisits}>
+                  Guardar Cambios
+                </button>
+              </>
+            )}
 
             {/* Botón para registrar una visita con comentario */}
             <button
