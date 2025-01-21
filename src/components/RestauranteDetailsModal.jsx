@@ -96,40 +96,22 @@ const RestauranteDetailsModal = ({
     }
   };
 
- /* const visitas =
-    restaurante?.fechasVisita?.map((fecha, index) => ({
-      fecha,
-      comentario:
-        restaurante.comentariosVisita.find(
-          (coment) =>
-            new Date(coment.fecha).toISOString() ===
-            new Date(fecha).toISOString()
-        )?.comentario || "Sin comentario",
-    })) || [];*/
-
-  // Función para registrar una visita con comentario
   const handleRegisterVisit = async () => {
     try {
       const dataToSend = {
         Comentario: comentario,
         Fecha: fechaVisita,
       };
-      await api.put(`/restaurantes/${restauranteId}/visita`, dataToSend);
+      const response = await api.put(
+        `/restaurantes/${restauranteId}/visita`,
+        dataToSend
+      );
       alert("Visita registrada correctamente");
-
-      // Refresca los datos del restaurante
-      const updatedRestaurante = await api.get(
-        `/restaurantes/${restauranteId}`
-      );
-      setRestaurante(updatedRestaurante.data);
-      setEditableVisits(
-        updatedRestaurante.data.visitas.map((visit) => ({ ...visit }))
-      );
-
+      setRestaurante(response.data);
       setIsRegisteringVisit(false);
       setComentario("");
       setFechaVisita(new Date().toISOString().split("T")[0]);
-      onUpdate(); // Notifica al componente principal para recargar la lista
+      onUpdate();
     } catch (error) {
       console.error("Error al registrar la visita:", error);
       alert(
@@ -148,12 +130,12 @@ const RestauranteDetailsModal = ({
     try {
       const response = await api.put(
         `/restaurantes/${restauranteId}/actualizar-visitas`,
-        { visitas: editableVisits } // Envía las visitas editadas
+        { visitas: editableVisits }
       );
       alert("Visitas actualizadas correctamente");
       setRestaurante(response.data);
       setIsEditingVisits(false);
-      onUpdate(); // Actualiza la lista principal
+      onUpdate();
     } catch (error) {
       console.error("Error al guardar las visitas:", error);
       alert(
@@ -163,12 +145,19 @@ const RestauranteDetailsModal = ({
       );
     }
   };
-  
 
   const handleVisitChange = (index, field, value) => {
     setEditableVisits((prev) => {
       const updated = [...prev];
       updated[index][field] = value;
+      return updated;
+    });
+  };
+
+  const handleDeleteVisit = (index) => {
+    setEditableVisits((prev) => {
+      const updated = [...prev];
+      updated.splice(index, 1); // Elimina la visita en el índice especificado
       return updated;
     });
   };
@@ -231,9 +220,7 @@ const RestauranteDetailsModal = ({
                     <li key={index} className="visit-edit-item">
                       <input
                         type="date"
-                        value={
-                          new Date(visita.fecha).toISOString().split("T")[0]
-                        }
+                        value={new Date(visita.fecha).toISOString().split("T")[0]}
                         onChange={(e) =>
                           handleVisitChange(index, "fecha", e.target.value)
                         }
@@ -246,10 +233,19 @@ const RestauranteDetailsModal = ({
                         }
                         className="textarea"
                       />
+                      <button
+                        className="btn btn-danger"
+                        onClick={() => handleDeleteVisit(index)}
+                      >
+                        Eliminar
+                      </button>
                     </li>
                   ))}
                 </ul>
-                <button className="btn btn-primary" onClick={handleSaveVisits}>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSaveVisits}
+                >
                   Guardar Cambios
                 </button>
               </>
@@ -289,7 +285,6 @@ const RestauranteDetailsModal = ({
                     <button
                       className="btn btn-primary"
                       onClick={handleRegisterVisit}
-                      disabled={!comentario.trim()}
                     >
                       Confirmar
                     </button>

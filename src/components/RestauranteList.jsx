@@ -240,13 +240,6 @@ const RestauranteList = () => {
               required
               className="input"
             />
-            <input
-              type="date"
-              name="Fecha"
-              value={formData.Fecha}
-              onChange={handleInputChange}
-              className="input"
-            />
           </div>
           <button type="submit" className="btn btn-primary">
             {isEditing ? "Actualizar" : "Crear"} Restaurante
