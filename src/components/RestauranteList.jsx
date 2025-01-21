@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
 const RestauranteList = () => {
@@ -17,19 +17,6 @@ const RestauranteList = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  useEffect(() => {
-    cargarRestaurantes();
-  }, []);
-
-  useEffect(() => {
-    // Extraer tipos de cocina y localizaciones únicos
-    const tipos = [...new Set(restaurantes.map(r => r['Tipo de cocina']))];
-    const locs = [...new Set(restaurantes.map(r => r['Localización']))];
-    setTiposCocina(tipos);
-    setLocalizaciones(locs);
-    aplicarFiltros();
-  }, [restaurantes, searchTerm, selectedTipoCocina, selectedLocalizacion]);
-
   const cargarRestaurantes = async () => {
     try {
       const response = await api.get('/restaurantes');
@@ -39,7 +26,7 @@ const RestauranteList = () => {
     }
   };
 
-  const aplicarFiltros = () => {
+  const aplicarFiltros = useCallback(() => {
     let filtered = [...restaurantes];
 
     if (searchTerm) {
@@ -61,7 +48,20 @@ const RestauranteList = () => {
     }
 
     setFilteredRestaurantes(filtered);
-  };
+  }, [restaurantes, searchTerm, selectedTipoCocina, selectedLocalizacion]);
+
+  useEffect(() => {
+    cargarRestaurantes();
+  }, []);
+
+  useEffect(() => {
+    // Extraer tipos de cocina y localizaciones únicos
+    const tipos = [...new Set(restaurantes.map(r => r['Tipo de cocina']))];
+    const locs = [...new Set(restaurantes.map(r => r['Localización']))];
+    setTiposCocina(tipos);
+    setLocalizaciones(locs);
+    aplicarFiltros();
+  }, [restaurantes, aplicarFiltros]);
 
   const handleInputChange = (e) => {
     setFormData({
