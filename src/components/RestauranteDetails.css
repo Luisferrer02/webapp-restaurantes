@@ -1,0 +1,73 @@
+.restaurante-details-container {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.restaurante-name {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.restaurante-cuisine,
+.restaurante-location {
+    font-size: 16px;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+.visit-list {
+    margin-top: 10px;
+    padding: 0;
+    list-style-type: none;
+}
+
+.visit-date {
+    font-size: 14px;
+    color: #666;
+    margin: 3px 0;
+}
+
+.description-input,
+.image-input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.description-input {
+    height: 80px;
+    resize: vertical;
+}
+
+.update-button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.update-button:hover {
+    background-color: #0056b3;
+}
+
+.loading-text {
+    text-align: center;
+    font-size: 18px;
+    color: #999;
+}

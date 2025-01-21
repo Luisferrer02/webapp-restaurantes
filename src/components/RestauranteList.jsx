@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
+import { useNavigate } from "react-router-dom";
 import "./Restaurante.css";
 
 const RestauranteList = () => {
@@ -21,7 +22,7 @@ const RestauranteList = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
-
+  const navigate = useNavigate(); // Hook para la navegación
   const [selectedTiposCocina, setSelectedTiposCocina] = useState([]);
   const [visitadoFilter, setVisitadoFilter] = useState("");
 
@@ -58,6 +59,14 @@ const RestauranteList = () => {
     });
     setFilteredRestaurantes(sorted);
   };
+
+  const handleRestaurantClick = (id) => {
+    navigate(`/restaurantes/${id}`); // Redirige a la página de detalles
+};
+
+useEffect(() => {
+  cargarRestaurantes();
+}, []);
 
   const aplicarFiltros = useCallback(() => {
     let filtered = [...restaurantes];
@@ -352,7 +361,7 @@ const RestauranteList = () => {
       {/* Lista */}
       <div className="restaurant-list">
         {filteredRestaurantes.map((restaurante) => (
-          <div key={restaurante._id} className="restaurant-card">
+          <div key={restaurante._id} className="restaurant-card" onClick={() => handleRestaurantClick(restaurante._id)}>
             <div className="restaurant-info">
               <h3 className="restaurant-title">{restaurante.Nombre}</h3>
               <p className="restaurant-details">
