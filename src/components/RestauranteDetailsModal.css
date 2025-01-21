@@ -13,10 +13,10 @@
     align-items: center;
     z-index: 1000; /* Asegura que el modal esté encima de otros elementos */
     animation: fadeIn 0.3s ease;
-}
-
-/* Modal Content */
-.modal-content {
+  }
+  
+  /* Modal Content */
+  .modal-content {
     background: #fff;
     padding: 30px;
     border-radius: 8px;
@@ -27,10 +27,10 @@
     animation: slideIn 0.3s ease;
     max-height: 90vh;
     overflow-y: auto;
-}
-
-/* Close Button */
-.close-button {
+  }
+  
+  /* Close Button */
+  .close-button {
     position: absolute;
     top: 15px;
     right: 20px;
@@ -40,46 +40,55 @@
     cursor: pointer;
     color: #333;
     transition: color 0.2s;
-}
-
-.close-button:hover {
+  }
+  
+  .close-button:hover {
     color: #ff0000;
-}
-
-/* Restaurante Details */
-.restaurante-details h2 {
+  }
+  
+  /* Restaurante Details */
+  .restaurante-details h2 {
     margin-top: 0;
     color: #333;
-}
-
-.restaurante-details p {
+  }
+  
+  .restaurante-details p {
     color: #555;
     margin: 5px 0;
-}
-
-.visit-list {
+  }
+  
+  .restaurante-imagen {
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin: 10px 0;
+  }
+  
+  .visit-list {
     list-style-type: disc;
     padding-left: 20px;
     color: #555;
-}
-
-.visit-list li {
+  }
+  
+  .visit-list li {
     margin-bottom: 5px;
-}
-
-.form-group {
+  }
+  
+  /* Formulario */
+  .form-group {
     margin-top: 15px;
     display: flex;
     flex-direction: column;
-}
-
-.form-group label {
+  }
+  
+  .form-group label {
     margin-bottom: 5px;
     font-weight: bold;
     color: #333;
-}
-
-.textarea {
+  }
+  
+  .textarea {
     width: 100%;
     height: 80px;
     padding: 10px;
@@ -87,17 +96,18 @@
     border-radius: 4px;
     resize: vertical;
     font-size: 1rem;
-}
-
-.input {
+  }
+  
+  .input {
     width: 100%;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 1rem;
-}
-
-.btn {
+  }
+  
+  /* Botones */
+  .btn {
     margin-top: 20px;
     padding: 10px 20px;
     cursor: pointer;
@@ -105,44 +115,104 @@
     border-radius: 4px;
     font-size: 1rem;
     transition: background 0.2s, transform 0.2s;
-}
-
-.btn-primary {
+  }
+  
+  .btn-primary {
     background-color: #007bff;
     color: #fff;
-}
-
-.btn-primary:hover {
+  }
+  
+  .btn-primary:hover {
     background-color: #0056b3;
     transform: scale(1.02);
-}
-
-.loading-text,
-.error-text {
+  }
+  
+  .btn-secondary {
+    background-color: #6c757d;
+    color: #fff;
+  }
+  
+  .btn-secondary:hover {
+    background-color: #5a6268;
+    transform: scale(1.02);
+  }
+  
+  .btn-danger {
+    background-color: #dc3545;
+    color: #fff;
+  }
+  
+  .btn-danger:hover {
+    background-color: #c82333;
+    transform: scale(1.02);
+  }
+  
+  /* Loading y Error Text */
+  .loading-text,
+  .error-text {
     text-align: center;
     color: #555;
     font-size: 1.1rem;
-}
-
-/* Animaciones */
-@keyframes fadeIn {
+  }
+  
+  /* Animaciones */
+  @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-}
-
-@keyframes slideIn {
+  }
+  
+  @keyframes slideIn {
     from { transform: translateY(-50px); }
     to { transform: translateY(0); }
-}
-
-/* Responsividad */
-@media (max-width: 600px) {
+  }
+  
+  /* Sub-Modal Overlay */
+  .sub-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4); /* Fondo semitransparente */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1100; /* Asegura que el sub-modal esté encima del modal principal */
+    animation: fadeIn 0.3s ease;
+  }
+  
+  /* Sub-Modal Content */
+  .sub-modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    animation: slideIn 0.3s ease;
+  }
+  
+  .sub-modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+  }
+  
+  /* Responsividad */
+  @media (max-width: 600px) {
     .modal-content {
-        padding: 20px;
+      padding: 20px;
     }
-
+  
     .close-button {
-        top: 10px;
-        right: 15px;
+      top: 10px;
+      right: 15px;
     }
-}
+  
+    .sub-modal-content {
+      padding: 15px;
+    }
+  }
+  

@@ -1,3 +1,4 @@
+// RestauranteList.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
 import "./Restaurante.css";
@@ -9,9 +10,7 @@ const RestauranteList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [tiposCocina, setTiposCocina] = useState([]);
   const [localizaciones, setLocalizaciones] = useState([]);
-  //const [selectedTipoCocina, setSelectedTipoCocina] = useState("");
-  const [showLocalizacionDropdown, setShowLocalizacionDropdown] =
-    useState(false);
+  const [showLocalizacionDropdown, setShowLocalizacionDropdown] = useState(false);
   const [selectedLocalizacion, setSelectedLocalizacion] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRestauranteId, setSelectedRestauranteId] = useState(null);
@@ -46,6 +45,7 @@ const RestauranteList = () => {
       setFilteredRestaurantes(response.data);
     } catch (error) {
       console.error("Error al cargar restaurantes:", error);
+      alert("Error al cargar restaurantes.");
     }
   };
 
@@ -54,9 +54,9 @@ const RestauranteList = () => {
 
     const sorted = [...filteredRestaurantes].sort((a, b) => {
       const dateA =
-        a.fechasVisita?.length > 0 ? new Date(a.fechasVisita[0]) : new Date(0);
+        a.fechasVisita?.length > 0 ? new Date(a.fechasVisita[a.fechasVisita.length - 1]) : new Date(0);
       const dateB =
-        b.fechasVisita?.length > 0 ? new Date(b.fechasVisita[0]) : new Date(0);
+        b.fechasVisita?.length > 0 ? new Date(b.fechasVisita[b.fechasVisita.length - 1]) : new Date(0);
       return order === "asc" ? dateA - dateB : dateB - dateA;
     });
     setFilteredRestaurantes(sorted);
@@ -285,7 +285,6 @@ const RestauranteList = () => {
             <div className="dropdown-menu dropdown-tipos-cocina">
               {tiposCocina.map((tipo) => (
                 <label key={tipo} className="dropdown-item tipo-cocina-item">
-                  {tipo}
                   <input
                     type="checkbox"
                     value={tipo}
@@ -293,6 +292,7 @@ const RestauranteList = () => {
                     checked={selectedTiposCocina.includes(tipo)}
                     className="checkbox"
                   />
+                  {tipo}
                 </label>
               ))}
             </div>
@@ -313,14 +313,15 @@ const RestauranteList = () => {
             <div className="dropdown-menu dropdown-localizacion">
               {localizaciones.map((loc) => (
                 <label key={loc} className="dropdown-item localizacion-item">
-                  {loc}
                   <input
                     type="radio"
+                    name="localizacion"
                     value={loc}
                     checked={selectedLocalizacion === loc}
                     onChange={(e) => setSelectedLocalizacion(e.target.value)}
                     className="radio"
                   />
+                  {loc}
                 </label>
               ))}
             </div>
@@ -385,7 +386,8 @@ const RestauranteList = () => {
             </div>
             <div className="action-buttons">
               <button
-                onClick={async () => {
+                onClick={async (e) => {
+                  e.stopPropagation(); // Evita que el clic navegue al modal
                   try {
                     const response = await api.put(
                       `/restaurantes/${restaurante._id}/visita`
@@ -394,6 +396,9 @@ const RestauranteList = () => {
                     await cargarRestaurantes();
                   } catch (error) {
                     console.error("Error al registrar la visita:", error);
+                    alert(
+                      `Error al registrar la visita: ${error.response?.data?.message || error.message}`
+                    );
                   }
                 }}
                 className="btn btn-primary"
@@ -401,13 +406,19 @@ const RestauranteList = () => {
                 Registrar Visita
               </button>
               <button
-                onClick={() => handleEdit(restaurante)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Evita que el clic navegue al modal
+                  handleEdit(restaurante);
+                }}
                 className="btn btn-success"
               >
                 Editar
               </button>
               <button
-                onClick={() => handleDelete(restaurante._id)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Evita que el clic navegue al modal
+                  handleDelete(restaurante._id);
+                }}
                 className="btn btn-danger"
               >
                 Eliminar
@@ -422,6 +433,7 @@ const RestauranteList = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         restauranteId={selectedRestauranteId}
+        onUpdate={() => cargarRestaurantes()}
       />
     </div>
   );
