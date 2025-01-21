@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
+import "./Restaurante.css";
 
 const RestauranteList = () => {
   const [restaurantes, setRestaurantes] = useState([]);
@@ -7,8 +8,11 @@ const RestauranteList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [tiposCocina, setTiposCocina] = useState([]);
   const [localizaciones, setLocalizaciones] = useState([]);
-  const [selectedTipoCocina, setSelectedTipoCocina] = useState("");
+  //const [selectedTipoCocina, setSelectedTipoCocina] = useState("");
+  const [showLocalizacionDropdown, setShowLocalizacionDropdown] =
+    useState(false);
   const [selectedLocalizacion, setSelectedLocalizacion] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
   const [formData, setFormData] = useState({
     Nombre: "",
     "Tipo de cocina": "",
@@ -18,41 +22,84 @@ const RestauranteList = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  const [selectedTiposCocina, setSelectedTiposCocina] = useState([]);
+  const [visitadoFilter, setVisitadoFilter] = useState("");
+
+  const handleTipoCocinaChange = (e) => {
+    const value = e.target.value;
+    setSelectedTiposCocina(
+      (prev) =>
+        prev.includes(value)
+          ? prev.filter((tipo) => tipo !== value) // Quitar si ya está seleccionado
+          : [...prev, value] // Añadir si no está seleccionado
+    );
+  };
+
   const cargarRestaurantes = async () => {
     try {
-      const response = await api.get('/restaurantes');
-      console.log('Datos recibidos:', response.data);
+      const response = await api.get("/restaurantes");
+      console.log("Datos recibidos:", response.data);
       setRestaurantes(response.data);
       setFilteredRestaurantes(response.data);
     } catch (error) {
-      console.error('Error al cargar restaurantes:', error);
+      console.error("Error al cargar restaurantes:", error);
     }
   };
-  
+
+  const handleSort = (order) => {
+    if (!filteredRestaurantes || filteredRestaurantes.length === 0) return;
+
+    const sorted = [...filteredRestaurantes].sort((a, b) => {
+      const dateA =
+        a.fechasVisita?.length > 0 ? new Date(a.fechasVisita[0]) : new Date(0);
+      const dateB =
+        b.fechasVisita?.length > 0 ? new Date(b.fechasVisita[0]) : new Date(0);
+      return order === "asc" ? dateA - dateB : dateB - dateA;
+    });
+    setFilteredRestaurantes(sorted);
+  };
 
   const aplicarFiltros = useCallback(() => {
     let filtered = [...restaurantes];
 
+    // Filtro por nombre (búsqueda)
     if (searchTerm) {
       filtered = filtered.filter((rest) =>
         rest.Nombre.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    if (selectedTipoCocina) {
-      filtered = filtered.filter(
-        (rest) => rest["Tipo de cocina"] === selectedTipoCocina
+    // Filtro por múltiples tipos de cocina
+    if (selectedTiposCocina.length > 0) {
+      filtered = filtered.filter((rest) =>
+        selectedTiposCocina.includes(rest["Tipo de cocina"])
       );
     }
 
+    // Filtro por localización
     if (selectedLocalizacion) {
       filtered = filtered.filter(
         (rest) => rest["Localización"] === selectedLocalizacion
       );
     }
 
+    // Filtro por visitado/no visitado
+    if (visitadoFilter === "visitado") {
+      filtered = filtered.filter((rest) => rest.fechasVisita?.length > 0);
+    } else if (visitadoFilter === "no-visitado") {
+      filtered = filtered.filter(
+        (rest) => !rest.fechasVisita || rest.fechasVisita.length === 0
+      );
+    }
+
     setFilteredRestaurantes(filtered);
-  }, [restaurantes, searchTerm, selectedTipoCocina, selectedLocalizacion]);
+  }, [
+    restaurantes,
+    searchTerm,
+    selectedTiposCocina,
+    selectedLocalizacion,
+    visitadoFilter,
+  ]);
 
   useEffect(() => {
     cargarRestaurantes();
@@ -75,35 +122,38 @@ const RestauranteList = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     try {
       const dataToSend = {
         Nombre: formData.Nombre,
-        'Tipo de cocina': formData['Tipo de cocina'],
-        'Localización': formData['Localización'],
-        Fecha: formData.Fecha || '', // Si no hay fecha, se envía como vacío
+        "Tipo de cocina": formData["Tipo de cocina"],
+        Localización: formData["Localización"],
+        Fecha: formData.Fecha || "", // Si no hay fecha, se envía como vacío
       };
-  
-      console.log('Datos a enviar:', dataToSend);
-  
+
+      console.log("Datos a enviar:", dataToSend);
+
       if (isEditing && editingId) {
-        console.log('Editando restaurante con ID:', editingId);
-        const response = await api.put(`/restaurantes/${editingId}`, dataToSend);
-        console.log('Respuesta de edición:', response.data);
+        console.log("Editando restaurante con ID:", editingId);
+        const response = await api.put(
+          `/restaurantes/${editingId}`,
+          dataToSend
+        );
+        console.log("Respuesta de edición:", response.data);
       } else {
-        console.log('Creando nuevo restaurante');
-        const response = await api.post('/restaurantes', dataToSend);
-        console.log('Respuesta de creación:', response.data);
+        console.log("Creando nuevo restaurante");
+        const response = await api.post("/restaurantes", dataToSend);
+        console.log("Respuesta de creación:", response.data);
       }
-  
+
       await cargarRestaurantes();
       resetForm();
     } catch (error) {
-      console.error('Error detallado:', error);
+      console.error("Error detallado:", error);
       alert(`Error: ${error.response?.data?.message || error.message}`);
     }
   };
-  
+
   const handleDelete = async (id) => {
     if (window.confirm("¿Estás seguro de querer eliminar este restaurante?")) {
       try {
@@ -141,20 +191,13 @@ const RestauranteList = () => {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2 style={{ marginBottom: "20px" }}>Gestión de Restaurantes</h2>
+    <div className="container">
+      <h2 className="title">Gestión de Restaurantes</h2>
 
       {/* Formulario */}
-      <div
-        style={{
-          marginBottom: "20px",
-          padding: "20px",
-          border: "1px solid #ccc",
-          borderRadius: "4px",
-        }}
-      >
+      <div className="form-container">
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "10px" }}>
+          <div className="form-inputs">
             <input
               type="text"
               name="Nombre"
@@ -162,7 +205,7 @@ const RestauranteList = () => {
               value={formData.Nombre}
               onChange={handleInputChange}
               required
-              style={{ padding: "8px", marginRight: "10px", width: "200px" }}
+              className="input"
             />
             <input
               type="text"
@@ -171,7 +214,7 @@ const RestauranteList = () => {
               value={formData["Tipo de cocina"]}
               onChange={handleInputChange}
               required
-              style={{ padding: "8px", marginRight: "10px", width: "200px" }}
+              className="input"
             />
             <input
               type="text"
@@ -180,40 +223,24 @@ const RestauranteList = () => {
               value={formData["Localización"]}
               onChange={handleInputChange}
               required
-              style={{ padding: "8px", marginRight: "10px", width: "200px" }}
+              className="input"
             />
             <input
               type="date"
               name="Fecha"
               value={formData.Fecha}
               onChange={handleInputChange}
-              style={{ padding: "8px", marginRight: "10px", width: "200px" }}
+              className="input"
             />
           </div>
-          <button
-            type="submit"
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#007bff",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              marginRight: "10px",
-            }}
-          >
+          <button type="submit" className="btn btn-primary">
             {isEditing ? "Actualizar" : "Crear"} Restaurante
           </button>
           {isEditing && (
             <button
               type="button"
               onClick={resetForm}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#6c757d",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-              }}
+              className="btn btn-secondary"
             >
               Cancelar
             </button>
@@ -222,86 +249,154 @@ const RestauranteList = () => {
       </div>
 
       {/* Filtros */}
-      <div style={{ marginBottom: "20px" }}>
-        <input
-          type="text"
-          placeholder="Buscar restaurantes..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ padding: "8px", marginRight: "10px", width: "200px" }}
-        />
-        <select
-          value={selectedTipoCocina}
-          onChange={(e) => setSelectedTipoCocina(e.target.value)}
-          style={{ padding: "8px", marginRight: "10px" }}
-        >
-          <option value="">Todos los tipos de cocina</option>
-          {tiposCocina.map((tipo) => (
-            <option key={tipo} value={tipo}>
-              {tipo}
-            </option>
-          ))}
-        </select>
-        <select
-          value={selectedLocalizacion}
-          onChange={(e) => setSelectedLocalizacion(e.target.value)}
-          style={{ padding: "8px" }}
-        >
-          <option value="">Todas las localizaciones</option>
-          {localizaciones.map((loc) => (
-            <option key={loc} value={loc}>
-              {loc}
-            </option>
-          ))}
-        </select>
+      <div className="filters-section">
+        {/* Búsqueda por nombre */}
+        <div className="filter-item">
+          <input
+            type="text"
+            placeholder="Buscar restaurantes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+        </div>
+
+        {/* Dropdown de Tipos de Cocina */}
+        <div className="filter-item dropdown-container">
+          <button
+            onClick={() => setShowDropdown((prev) => !prev)}
+            className="dropdown-button"
+          >
+            {selectedTiposCocina.length > 0
+              ? `Seleccionados: ${selectedTiposCocina.join(", ")}`
+              : "Seleccionar Tipos de Cocina"}
+            <span className="dropdown-arrow">▼</span>
+          </button>
+
+          {showDropdown && (
+            <div className="dropdown-menu dropdown-tipos-cocina">
+              {tiposCocina.map((tipo) => (
+                <label key={tipo} className="dropdown-item tipo-cocina-item">
+                  {tipo}
+                  <input
+                    type="checkbox"
+                    value={tipo}
+                    onChange={handleTipoCocinaChange}
+                    checked={selectedTiposCocina.includes(tipo)}
+                    className="checkbox"
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Dropdown de Localización */}
+        <div className="filter-item dropdown-container">
+          <button
+            onClick={() => setShowLocalizacionDropdown((prev) => !prev)}
+            className="dropdown-button"
+          >
+            {selectedLocalizacion || "Seleccionar Localización"}
+            <span className="dropdown-arrow">▼</span>
+          </button>
+
+          {showLocalizacionDropdown && (
+            <div className="dropdown-menu dropdown-localizacion">
+              {localizaciones.map((loc) => (
+                <label key={loc} className="dropdown-item localizacion-item">
+                  {loc}
+                  <input
+                    type="radio"
+                    value={loc}
+                    checked={selectedLocalizacion === loc}
+                    onChange={(e) => setSelectedLocalizacion(e.target.value)}
+                    className="radio"
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Filtros por visitas y ordenación */}
+      <div className="visit-sort-section">
+        {/* Botones de visitas */}
+        <div className="visit-buttons">
+          <button onClick={() => setVisitadoFilter("")} className="btn">
+            Todos
+          </button>
+          <button onClick={() => setVisitadoFilter("visitado")} className="btn">
+            Visitados
+          </button>
+          <button
+            onClick={() => setVisitadoFilter("no-visitado")}
+            className="btn"
+          >
+            No Visitados
+          </button>
+        </div>
+
+        {/* Botones para ordenar */}
+        <div className="sort-buttons">
+          <button onClick={() => handleSort("asc")} className="btn">
+            Ordenar por Fecha (Asc)
+          </button>
+          <button onClick={() => handleSort("desc")} className="btn">
+            Ordenar por Fecha (Desc)
+          </button>
+        </div>
       </div>
 
       {/* Lista */}
-      <div>
+      <div className="restaurant-list">
         {filteredRestaurantes.map((restaurante) => (
-          <div
-            key={restaurante._id}
-            style={{
-              padding: "15px",
-              marginBottom: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <h3 style={{ margin: "0 0 5px 0" }}>{restaurante.Nombre}</h3>
-              <p style={{ margin: 0 }}>
+          <div key={restaurante._id} className="restaurant-card">
+            <div className="restaurant-info">
+              <h3 className="restaurant-title">{restaurante.Nombre}</h3>
+              <p className="restaurant-details">
                 {restaurante["Tipo de cocina"]} - {restaurante["Localización"]}
-                {restaurante.Fecha &&
-                  ` - ${new Date(restaurante.Fecha).toLocaleDateString()}`}
+                {restaurante.fechasVisita?.length > 0
+                  ? ` - ${restaurante.fechasVisita.length} visita(s)`
+                  : " - No visitado"}
               </p>
+              <ul className="visit-list">
+                {restaurante.fechasVisita?.length > 0 ? (
+                  restaurante.fechasVisita.map((fecha, index) => (
+                    <li key={index}>{new Date(fecha).toLocaleDateString()}</li>
+                  ))
+                ) : (
+                  <li>No hay visitas registradas</li>
+                )}
+              </ul>
             </div>
-            <div>
+            <div className="action-buttons">
+              <button
+                onClick={async () => {
+                  try {
+                    const response = await api.put(
+                      `/restaurantes/${restaurante._id}/visita`
+                    );
+                    console.log("Visita registrada:", response.data);
+                    await cargarRestaurantes();
+                  } catch (error) {
+                    console.error("Error al registrar la visita:", error);
+                  }
+                }}
+                className="btn btn-primary"
+              >
+                Registrar Visita
+              </button>
               <button
                 onClick={() => handleEdit(restaurante)}
-                style={{
-                  padding: "5px 10px",
-                  backgroundColor: "#28a745",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  marginRight: "5px",
-                }}
+                className="btn btn-success"
               >
                 Editar
               </button>
               <button
                 onClick={() => handleDelete(restaurante._id)}
-                style={{
-                  padding: "5px 10px",
-                  backgroundColor: "#dc3545",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
+                className="btn btn-danger"
               >
                 Eliminar
               </button>
