@@ -385,7 +385,7 @@ const RestauranteList = () => {
               </ul>
             </div>
             <div className="action-buttons">
-              <button
+              {/*<button
                 onClick={async (e) => {
                   e.stopPropagation(); // Evita que el clic navegue al modal
                   try {
@@ -404,7 +404,7 @@ const RestauranteList = () => {
                 className="btn btn-primary"
               >
                 Registrar Visita
-              </button>
+              </button>*/}
               <button
                 onClick={(e) => {
                   e.stopPropagation(); // Evita que el clic navegue al modal

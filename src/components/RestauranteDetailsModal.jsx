@@ -1,17 +1,22 @@
 // RestauranteDetailsModal.jsx
-import React, { useEffect, useState } from 'react';
-import api from '../services/api';
-import './RestauranteDetailsModal.css'; // Asegúrate de crear este archivo de estilos
+import React, { useEffect, useState } from "react";
+import api from "../services/api";
+import "./RestauranteDetailsModal.css"; // Asegúrate de crear este archivo de estilos
 
-const RestauranteDetailsModal = ({ isOpen, onClose, restauranteId, onUpdate }) => {
+const RestauranteDetailsModal = ({
+  isOpen,
+  onClose,
+  restauranteId,
+  onUpdate,
+}) => {
   const [restaurante, setRestaurante] = useState(null);
-  const [descripcion, setDescripcion] = useState('');
-  const [imagen, setImagen] = useState('');
+  const [descripcion, setDescripcion] = useState("");
+  const [imagen, setImagen] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // Estados para el sub-modal de registrar visita con comentario
   const [isRegisteringVisit, setIsRegisteringVisit] = useState(false);
-  const [comentario, setComentario] = useState('');
+  const [comentario, setComentario] = useState("");
 
   useEffect(() => {
     if (restauranteId && isOpen) {
@@ -20,11 +25,11 @@ const RestauranteDetailsModal = ({ isOpen, onClose, restauranteId, onUpdate }) =
         try {
           const response = await api.get(`/restaurantes/${restauranteId}`);
           setRestaurante(response.data);
-          setDescripcion(response.data.Descripcion || '');
-          setImagen(response.data.Imagen || '');
+          setDescripcion(response.data.Descripcion || "");
+          setImagen(response.data.Imagen || "");
         } catch (error) {
-          console.error('Error al cargar detalles del restaurante:', error);
-          alert('Error al cargar detalles del restaurante.');
+          console.error("Error al cargar detalles del restaurante:", error);
+          alert("Error al cargar detalles del restaurante.");
         } finally {
           setIsLoading(false);
         }
@@ -33,23 +38,26 @@ const RestauranteDetailsModal = ({ isOpen, onClose, restauranteId, onUpdate }) =
     } else {
       // Reset states cuando el modal se cierra
       setRestaurante(null);
-      setDescripcion('');
-      setImagen('');
+      setDescripcion("");
+      setImagen("");
       setIsRegisteringVisit(false);
-      setComentario('');
+      setComentario("");
     }
   }, [restauranteId, isOpen]);
 
   const handleUpdate = async () => {
     try {
       const dataToSend = { Descripcion: descripcion, Imagen: imagen };
-      const response = await api.put(`/restaurantes/${restauranteId}`, dataToSend);
-      alert('Actualizado correctamente');
+      const response = await api.put(
+        `/restaurantes/${restauranteId}`,
+        dataToSend
+      );
+      alert("Actualizado correctamente");
       setRestaurante(response.data);
       onUpdate(); // Actualiza la lista de restaurantes en el componente padre
       onClose(); // Cierra el modal después de actualizar
     } catch (error) {
-      console.error('Error al actualizar:', error);
+      console.error("Error al actualizar:", error);
       alert(`Error: ${error.response?.data?.message || error.message}`);
     }
   };
@@ -58,15 +66,22 @@ const RestauranteDetailsModal = ({ isOpen, onClose, restauranteId, onUpdate }) =
   const handleRegisterVisit = async () => {
     try {
       const dataToSend = { Comentario: comentario };
-      const response = await api.put(`/restaurantes/${restauranteId}/visita`, dataToSend);
-      alert('Visita registrada correctamente');
+      const response = await api.put(
+        `/restaurantes/${restauranteId}/visita`,
+        dataToSend
+      );
+      alert("Visita registrada correctamente");
       setRestaurante(response.data);
       setIsRegisteringVisit(false);
-      setComentario('');
+      setComentario("");
       onUpdate(); // Actualiza la lista de restaurantes en el componente padre
     } catch (error) {
-      console.error('Error al registrar la visita:', error);
-      alert(`Error al registrar la visita: ${error.response?.data?.message || error.message}`);
+      console.error("Error al registrar la visita:", error);
+      alert(
+        `Error al registrar la visita: ${
+          error.response?.data?.message || error.message
+        }`
+      );
     }
   };
 
@@ -83,26 +98,36 @@ const RestauranteDetailsModal = ({ isOpen, onClose, restauranteId, onUpdate }) =
         ) : restaurante ? (
           <div className="restaurante-details">
             <h2>{restaurante.Nombre}</h2>
-            <p><strong>Tipo de cocina:</strong> {restaurante['Tipo de cocina']}</p>
-            <p><strong>Localización:</strong> {restaurante['Localización']}</p>
+            <p>
+              <strong>Tipo de cocina:</strong> {restaurante["Tipo de cocina"]}
+            </p>
+            <p>
+              <strong>Localización:</strong> {restaurante["Localización"]}
+            </p>
             {restaurante.Imagen && (
-              <img src={restaurante.Imagen} alt={`${restaurante.Nombre}`} className="restaurante-imagen" />
+              <img
+                src={restaurante.Imagen}
+                alt={`${restaurante.Nombre}`}
+                className="restaurante-imagen"
+              />
             )}
-            <p><strong>Descripción:</strong> {restaurante.Descripcion || 'No hay descripción.'}</p>
+            <p>
+              <strong>Descripción:</strong>{" "}
+              {restaurante.Descripcion || "No hay descripción."}
+            </p>
             <h3>Visitas:</h3>
             <ul className="visit-list">
-              {restaurante.fechasVisita.length > 0 ? (
-                restaurante.fechasVisita.map((fecha, index) => (
+              {restaurante.visitas.length > 0 ? (
+                restaurante.visitas.map((visita, index) => (
                   <li key={index}>
-                    {new Date(fecha).toLocaleDateString()}
-                    {/* Puedes mostrar comentarios aquí si los tienes */}
+                    {new Date(visita.fecha).toLocaleDateString()} -{" "}
+                    {visita.comentario || "Sin comentario"}
                   </li>
                 ))
               ) : (
                 <li>No hay visitas registradas</li>
               )}
             </ul>
-
             {/* Botón para registrar una visita con comentario */}
             <button
               className="btn btn-primary"
@@ -110,11 +135,16 @@ const RestauranteDetailsModal = ({ isOpen, onClose, restauranteId, onUpdate }) =
             >
               Registrar Visita
             </button>
-
             {/* Sub-Modal para Registrar Visita con Comentario */}
             {isRegisteringVisit && (
-              <div className="sub-modal-overlay" onClick={() => setIsRegisteringVisit(false)}>
-                <div className="sub-modal-content" onClick={(e) => e.stopPropagation()}>
+              <div
+                className="sub-modal-overlay"
+                onClick={() => setIsRegisteringVisit(false)}
+              >
+                <div
+                  className="sub-modal-content"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <h3>Registrar Visita</h3>
                   <textarea
                     value={comentario}
@@ -140,7 +170,6 @@ const RestauranteDetailsModal = ({ isOpen, onClose, restauranteId, onUpdate }) =
                 </div>
               </div>
             )}
-
             {/* Formulario para actualizar descripción e imagen */}
             <div className="form-group">
               <label htmlFor="descripcion">Descripción:</label>
