@@ -38,7 +38,7 @@ const RestauranteList = () => {
 
   const cargarRestaurantes = async () => {
     try {
-      const response = await api.get("/restaurantes");
+      const response = await api.get('/restaurantes');
       console.log("Datos recibidos:", response.data);
       setRestaurantes(response.data);
       setFilteredRestaurantes(response.data);
