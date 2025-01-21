@@ -377,14 +377,17 @@ const RestauranteList = () => {
               <h3 className="restaurant-title">{restaurante.Nombre}</h3>
               <p className="restaurant-details">
                 {restaurante["Tipo de cocina"]} - {restaurante["Localización"]}
-                {restaurante.fechasVisita?.length > 0
-                  ? ` - ${restaurante.fechasVisita.length} visita(s)`
+                {restaurante.visitas?.length > 0
+                  ? ` - ${restaurante.visitas.length} visita(s)`
                   : " - No visitado"}
               </p>
               <ul className="visit-list">
-                {restaurante.fechasVisita?.length > 0 ? (
-                  restaurante.fechasVisita.map((fecha, index) => (
-                    <li key={index}>{new Date(fecha).toLocaleDateString()}</li>
+                {restaurante.visitas?.length > 0 ? (
+                  restaurante.visitas.map((visita, index) => (
+                    <li key={index}>
+                      {new Date(visita.fecha).toLocaleDateString()} -{" "}
+                      {visita.comentario || "Sin comentario"}
+                    </li>
                   ))
                 ) : (
                   <li>No hay visitas registradas</li>

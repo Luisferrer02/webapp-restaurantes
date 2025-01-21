@@ -148,12 +148,12 @@ const RestauranteDetailsModal = ({
     try {
       const response = await api.put(
         `/restaurantes/${restauranteId}/actualizar-visitas`,
-        { visitas: editableVisits }
+        { visitas: editableVisits } // Envía las visitas editadas
       );
       alert("Visitas actualizadas correctamente");
       setRestaurante(response.data);
       setIsEditingVisits(false);
-      onUpdate();
+      onUpdate(); // Actualiza la lista principal
     } catch (error) {
       console.error("Error al guardar las visitas:", error);
       alert(
@@ -163,6 +163,7 @@ const RestauranteDetailsModal = ({
       );
     }
   };
+  
 
   const handleVisitChange = (index, field, value) => {
     setEditableVisits((prev) => {
