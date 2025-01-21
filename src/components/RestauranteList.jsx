@@ -121,7 +121,7 @@ const RestauranteList = () => {
   }, []);
 
   useEffect(() => {
-    const tipos = [...new Set(restaurantes.map((r) => r["Tipo de cocina"]))];
+    const tipos = [...new Set(restaurantes.map((r) => r["Tipo de cocina"]))].sort((a, b) => a.localeCompare(b));
     const locs = [...new Set(restaurantes.map((r) => r["Localización"]))];
     setTiposCocina(tipos);
     setLocalizaciones(locs);
