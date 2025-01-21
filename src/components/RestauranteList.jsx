@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
-import { useNavigate } from "react-router-dom";
 import "./Restaurante.css";
+import RestauranteDetailsModal from "./RestauranteDetailsModal";
 
 const RestauranteList = () => {
   const [restaurantes, setRestaurantes] = useState([]);
@@ -13,6 +13,9 @@ const RestauranteList = () => {
   const [showLocalizacionDropdown, setShowLocalizacionDropdown] =
     useState(false);
   const [selectedLocalizacion, setSelectedLocalizacion] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRestauranteId, setSelectedRestauranteId] = useState(null);
+
   const [showDropdown, setShowDropdown] = useState(false);
   const [formData, setFormData] = useState({
     Nombre: "",
@@ -22,7 +25,6 @@ const RestauranteList = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const navigate = useNavigate(); // Hook para la navegación
   const [selectedTiposCocina, setSelectedTiposCocina] = useState([]);
   const [visitadoFilter, setVisitadoFilter] = useState("");
 
@@ -61,7 +63,8 @@ const RestauranteList = () => {
   };
 
   const handleRestaurantClick = (id) => {
-    navigate(`/restaurantes/${id}`); // Redirige a la página de detalles
+    setSelectedRestauranteId(id);
+    setIsModalOpen(true);
   };
 
   const aplicarFiltros = useCallback(() => {
@@ -413,6 +416,13 @@ const RestauranteList = () => {
           </div>
         ))}
       </div>
+
+      {/* Modal de Detalles del Restaurante */}
+      <RestauranteDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        restauranteId={selectedRestauranteId}
+      />
     </div>
   );
 };
