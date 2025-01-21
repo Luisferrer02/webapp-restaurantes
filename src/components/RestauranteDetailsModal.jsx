@@ -47,7 +47,15 @@ const RestauranteDetailsModal = ({
 
   const handleUpdate = async () => {
     try {
-      const dataToSend = { Descripcion: descripcion, Imagen: imagen };
+      const dataToSend = { Descripcion: descripcion };
+      
+      // Solo agregar 'Imagen' si no está vacío
+      if (imagen.trim() !== '') {
+        dataToSend.Imagen = imagen;
+      }
+  
+      console.log('Datos a enviar para actualización:', dataToSend);
+  
       const response = await api.put(
         `/restaurantes/${restauranteId}`,
         dataToSend
@@ -58,9 +66,19 @@ const RestauranteDetailsModal = ({
       onClose(); // Cierra el modal después de actualizar
     } catch (error) {
       console.error("Error al actualizar:", error);
-      alert(`Error: ${error.response?.data?.message || error.message}`);
+      
+      // Manejo detallado de errores de validación
+      if (error.response && error.response.data && error.response.data.errors) {
+        const errorMessages = error.response.data.errors.map(err => err.msg).join('\n');
+        alert(`Errores de validación:\n${errorMessages}`);
+      } else if (error.response && error.response.data && error.response.data.message) {
+        alert(`Error: ${error.response.data.message}`);
+      } else {
+        alert(`Error: ${error.message}`);
+      }
     }
   };
+  
 
   // Función para registrar una visita con comentario
   const handleRegisterVisit = async () => {
