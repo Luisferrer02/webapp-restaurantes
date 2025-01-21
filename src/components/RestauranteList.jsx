@@ -38,7 +38,7 @@ const RestauranteList = () => {
 
   const cargarRestaurantes = async () => {
     try {
-      const response = await api.get('/restaurantes');
+      const response = await api.get("/restaurantes");
       console.log("Datos recibidos:", response.data);
       setRestaurantes(response.data);
       setFilteredRestaurantes(response.data);
@@ -62,11 +62,7 @@ const RestauranteList = () => {
 
   const handleRestaurantClick = (id) => {
     navigate(`/restaurantes/${id}`); // Redirige a la página de detalles
-};
-
-useEffect(() => {
-  cargarRestaurantes();
-}, []);
+  };
 
   const aplicarFiltros = useCallback(() => {
     let filtered = [...restaurantes];
@@ -361,7 +357,11 @@ useEffect(() => {
       {/* Lista */}
       <div className="restaurant-list">
         {filteredRestaurantes.map((restaurante) => (
-          <div key={restaurante._id} className="restaurant-card" onClick={() => handleRestaurantClick(restaurante._id)}>
+          <div
+            key={restaurante._id}
+            className="restaurant-card"
+            onClick={() => handleRestaurantClick(restaurante._id)}
+          >
             <div className="restaurant-info">
               <h3 className="restaurant-title">{restaurante.Nombre}</h3>
               <p className="restaurant-details">
