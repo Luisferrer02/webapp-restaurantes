@@ -13,6 +13,7 @@ const RestauranteList = () => {
     Nombre: '',
     'Tipo de cocina': '',
     'Localización': '',
+    'Fecha': ''
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -20,7 +21,9 @@ const RestauranteList = () => {
   const cargarRestaurantes = async () => {
     try {
       const response = await api.get('/restaurantes');
+      console.log('Datos recibidos:', response.data);
       setRestaurantes(response.data);
+      setFilteredRestaurantes(response.data);
     } catch (error) {
       console.error('Error al cargar restaurantes:', error);
     }
@@ -55,7 +58,6 @@ const RestauranteList = () => {
   }, []);
 
   useEffect(() => {
-    // Extraer tipos de cocina y localizaciones únicos
     const tipos = [...new Set(restaurantes.map(r => r['Tipo de cocina']))];
     const locs = [...new Set(restaurantes.map(r => r['Localización']))];
     setTiposCocina(tipos);
@@ -72,16 +74,31 @@ const RestauranteList = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     try {
-      if (isEditing) {
-        await api.put(`/restaurantes/${editingId}`, formData);
+      const dataToSend = {
+        ...formData,
+        Fecha: formData.Fecha || new Date().toISOString().split('T')[0] // Si no hay fecha, usa la actual
+      };
+
+      console.log('Datos a enviar:', dataToSend);
+
+      if (isEditing && editingId) {
+        console.log('Editando restaurante con ID:', editingId);
+        const response = await api.put(`/restaurantes/${editingId}`, dataToSend);
+        console.log('Respuesta de edición:', response.data);
       } else {
-        await api.post('/restaurantes', formData);
+        console.log('Creando nuevo restaurante');
+        const response = await api.post('/restaurantes', dataToSend);
+        console.log('Respuesta de creación:', response.data);
       }
-      cargarRestaurantes();
+      
+      await cargarRestaurantes();
       resetForm();
     } catch (error) {
-      console.error('Error al guardar restaurante:', error);
+      console.error('Error detallado:', error);
+      console.error('Datos de la respuesta:', error.response?.data);
+      alert(`Error: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -92,15 +109,17 @@ const RestauranteList = () => {
         cargarRestaurantes();
       } catch (error) {
         console.error('Error al eliminar restaurante:', error);
+        alert(`Error al eliminar: ${error.response?.data?.message || error.message}`);
       }
     }
   };
 
   const handleEdit = (restaurante) => {
     setFormData({
-      Nombre: restaurante.Nombre,
-      'Tipo de cocina': restaurante['Tipo de cocina'],
-      'Localización': restaurante['Localización']
+      Nombre: restaurante.Nombre || '',
+      'Tipo de cocina': restaurante['Tipo de cocina'] || '',
+      'Localización': restaurante['Localización'] || '',
+      'Fecha': restaurante.Fecha || ''
     });
     setIsEditing(true);
     setEditingId(restaurante._id);
@@ -110,7 +129,8 @@ const RestauranteList = () => {
     setFormData({
       Nombre: '',
       'Tipo de cocina': '',
-      'Localización': ''
+      'Localización': '',
+      'Fecha': ''
     });
     setIsEditing(false);
     setEditingId(null);
@@ -120,7 +140,7 @@ const RestauranteList = () => {
     <div style={{ padding: '20px' }}>
       <h2 style={{ marginBottom: '20px' }}>Gestión de Restaurantes</h2>
 
-      {/* Formulario de creación/edición */}
+      {/* Formulario */}
       <div style={{ marginBottom: '20px', padding: '20px', border: '1px solid #ccc', borderRadius: '4px' }}>
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '10px' }}>
@@ -130,6 +150,7 @@ const RestauranteList = () => {
               placeholder="Nombre del restaurante"
               value={formData.Nombre}
               onChange={handleInputChange}
+              required
               style={{ padding: '8px', marginRight: '10px', width: '200px' }}
             />
             <input
@@ -138,6 +159,7 @@ const RestauranteList = () => {
               placeholder="Tipo de cocina"
               value={formData['Tipo de cocina']}
               onChange={handleInputChange}
+              required
               style={{ padding: '8px', marginRight: '10px', width: '200px' }}
             />
             <input
@@ -145,6 +167,14 @@ const RestauranteList = () => {
               name="Localización"
               placeholder="Localización"
               value={formData['Localización']}
+              onChange={handleInputChange}
+              required
+              style={{ padding: '8px', marginRight: '10px', width: '200px' }}
+            />
+            <input
+              type="date"
+              name="Fecha"
+              value={formData.Fecha}
               onChange={handleInputChange}
               style={{ padding: '8px', marginRight: '10px', width: '200px' }}
             />
@@ -180,7 +210,7 @@ const RestauranteList = () => {
         </form>
       </div>
 
-      {/* Filtros y búsqueda */}
+      {/* Filtros */}
       <div style={{ marginBottom: '20px' }}>
         <input
           type="text"
@@ -211,7 +241,7 @@ const RestauranteList = () => {
         </select>
       </div>
 
-      {/* Lista de restaurantes */}
+      {/* Lista */}
       <div>
         {filteredRestaurantes.map((restaurante) => (
           <div 
@@ -228,7 +258,10 @@ const RestauranteList = () => {
           >
             <div>
               <h3 style={{ margin: '0 0 5px 0' }}>{restaurante.Nombre}</h3>
-              <p style={{ margin: 0 }}>{restaurante['Tipo de cocina']} - {restaurante['Localización']}</p>
+              <p style={{ margin: 0 }}>
+                {restaurante['Tipo de cocina']} - {restaurante['Localización']}
+                {restaurante.Fecha && ` - ${new Date(restaurante.Fecha).toLocaleDateString()}`}
+              </p>
             </div>
             <div>
               <button
