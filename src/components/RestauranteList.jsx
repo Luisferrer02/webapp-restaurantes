@@ -17,6 +17,7 @@ const RestauranteList = () => {
   const [selectedRestauranteId, setSelectedRestauranteId] = useState(null);
 
   const [showDropdown, setShowDropdown] = useState(false);
+  const [sortCriteria, setSortCriteria] = useState("");
   const [formData, setFormData] = useState({
     Nombre: "",
     "Tipo de cocina": "",
@@ -40,10 +41,20 @@ const RestauranteList = () => {
 
   const cargarRestaurantes = async () => {
     try {
-      const response = await api.get("/restaurantes");
+      const params = {
+        // Para filtrar por visitado: "visitado" toma 'si' o 'no'
+        visitado:
+          visitadoFilter === "visitado"
+            ? "si"
+            : visitadoFilter === "no-visitado"
+            ? "no"
+            : undefined,
+        sort: sortCriteria || undefined,
+      };
+      const response = await api.get("/restaurantes", { params });
       console.log("Datos recibidos:", response.data);
-      setRestaurantes(response.data);
-      setFilteredRestaurantes(response.data);
+      setRestaurantes(response.data.restaurantes);
+      setFilteredRestaurantes(response.data.restaurantes);
     } catch (error) {
       console.error("Error al cargar restaurantes:", error);
       alert("Error al cargar restaurantes.");
@@ -121,7 +132,9 @@ const RestauranteList = () => {
   }, []);
 
   useEffect(() => {
-    const tipos = [...new Set(restaurantes.map((r) => r["Tipo de cocina"]))].sort((a, b) => a.localeCompare(b));
+    const tipos = [
+      ...new Set(restaurantes.map((r) => r["Tipo de cocina"])),
+    ].sort((a, b) => a.localeCompare(b));
     const locs = [...new Set(restaurantes.map((r) => r["Localización"]))];
     setTiposCocina(tipos);
     setLocalizaciones(locs);
@@ -349,11 +362,32 @@ const RestauranteList = () => {
 
         {/* Botones para ordenar */}
         <div className="sort-buttons">
-          <button onClick={() => handleSort("asc")} className="btn">
-            Ordenar por Fecha (Asc)
+          <button
+            onClick={() => {
+              setSortCriteria("fecha");
+              cargarRestaurantes();
+            }}
+            className="btn"
+          >
+            Ordenar por Fecha (visitados primero)
           </button>
-          <button onClick={() => handleSort("desc")} className="btn">
-            Ordenar por Fecha (Desc)
+          <button
+            onClick={() => {
+              setSortCriteria("nombre");
+              cargarRestaurantes();
+            }}
+            className="btn"
+          >
+            Ordenar alfabéticamente por Nombre
+          </button>
+          <button
+            onClick={() => {
+              setSortCriteria("tipo");
+              cargarRestaurantes();
+            }}
+            className="btn"
+          >
+            Ordenar alfabéticamente por Tipo de Cocina
           </button>
         </div>
       </div>
