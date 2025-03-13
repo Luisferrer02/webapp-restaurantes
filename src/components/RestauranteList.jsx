@@ -1,23 +1,22 @@
-// RestauranteList.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
 import "./Restaurante.css";
 import RestauranteDetailsModal from "./RestauranteDetailsModal";
 
 const RestauranteList = () => {
+  // Estados para la lista y filtros
   const [restaurantes, setRestaurantes] = useState([]);
   const [filteredRestaurantes, setFilteredRestaurantes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [tiposCocina, setTiposCocina] = useState([]);
   const [localizaciones, setLocalizaciones] = useState([]);
-  const [showLocalizacionDropdown, setShowLocalizacionDropdown] =
-    useState(false);
+  const [showLocalizacionDropdown, setShowLocalizacionDropdown] = useState(false);
   const [selectedLocalizacion, setSelectedLocalizacion] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRestauranteId, setSelectedRestauranteId] = useState(null);
 
+  // Estados para el formulario de creación/edición
   const [showDropdown, setShowDropdown] = useState(false);
-  const [sortCriteria, setSortCriteria] = useState("");
   const [formData, setFormData] = useState({
     Nombre: "",
     "Tipo de cocina": "",
@@ -28,21 +27,23 @@ const RestauranteList = () => {
   const [editingId, setEditingId] = useState(null);
   const [selectedTiposCocina, setSelectedTiposCocina] = useState([]);
   const [visitadoFilter, setVisitadoFilter] = useState("");
+  const [sortCriteria, setSortCriteria] = useState("");
 
+  // Función para manejar la selección de tipos de cocina
   const handleTipoCocinaChange = (e) => {
     const value = e.target.value;
-    setSelectedTiposCocina(
-      (prev) =>
-        prev.includes(value)
-          ? prev.filter((tipo) => tipo !== value) // Quitar si ya está seleccionado
-          : [...prev, value] // Añadir si no está seleccionado
+    setSelectedTiposCocina((prev) =>
+      prev.includes(value)
+        ? prev.filter((tipo) => tipo !== value)
+        : [...prev, value]
     );
   };
 
-  const cargarRestaurantes = async () => {
+  // Función para cargar restaurantes desde la API
+  const cargarRestaurantes = useCallback(async () => {
     try {
+      // Se envían los parámetros de filtro y ordenación al backend
       const params = {
-        // Para filtrar por visitado: "visitado" toma 'si' o 'no'
         visitado:
           visitadoFilter === "visitado"
             ? "si"
@@ -53,49 +54,32 @@ const RestauranteList = () => {
       };
       const response = await api.get("/restaurantes", { params });
       console.log("Datos recibidos:", response.data);
+      // Asumimos que el backend envía { total, restaurantes }
       setRestaurantes(response.data.restaurantes);
       setFilteredRestaurantes(response.data.restaurantes);
     } catch (error) {
       console.error("Error al cargar restaurantes:", error);
       alert("Error al cargar restaurantes.");
     }
-  };
+  }, [visitadoFilter, sortCriteria]);
 
-  const handleSort = (order) => {
-    if (!filteredRestaurantes || filteredRestaurantes.length === 0) return;
+  // useEffect para cargar los datos al montar y cuando cambien filtros de backend
+  useEffect(() => {
+    cargarRestaurantes();
+  }, [cargarRestaurantes]);
 
-    const sorted = [...filteredRestaurantes].sort((a, b) => {
-      const dateA =
-        a.visitas?.length > 0
-          ? new Date(a.visitas[a.visitas.length - 1].fecha)
-          : new Date(0);
-
-      const dateB =
-        b.visitas?.length > 0
-          ? new Date(b.visitas[b.visitas.length - 1].fecha)
-          : new Date(0);
-
-      return order === "asc" ? dateA - dateB : dateB - dateA;
-    });
-    setFilteredRestaurantes(sorted);
-  };
-
-  const handleRestaurantClick = (id) => {
-    setSelectedRestauranteId(id);
-    setIsModalOpen(true);
-  };
-
+  // Aplicar filtros adicionales en el frontend (por búsqueda, tipos y localización)
   const aplicarFiltros = useCallback(() => {
     let filtered = [...restaurantes];
 
-    // Filtro por nombre (búsqueda)
+    // Filtro por nombre
     if (searchTerm) {
       filtered = filtered.filter((rest) =>
         rest.Nombre.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Filtro por múltiples tipos de cocina
+    // Filtro por tipos de cocina (frontend)
     if (selectedTiposCocina.length > 0) {
       filtered = filtered.filter((rest) =>
         selectedTiposCocina.includes(rest["Tipo de cocina"])
@@ -109,28 +93,10 @@ const RestauranteList = () => {
       );
     }
 
-    // Filtro por visitado/no visitado
-    if (visitadoFilter === "visitado") {
-      filtered = filtered.filter((rest) => rest.fechasVisita?.length > 0);
-    } else if (visitadoFilter === "no-visitado") {
-      filtered = filtered.filter(
-        (rest) => !rest.fechasVisita || rest.fechasVisita.length === 0
-      );
-    }
-
     setFilteredRestaurantes(filtered);
-  }, [
-    restaurantes,
-    searchTerm,
-    selectedTiposCocina,
-    selectedLocalizacion,
-    visitadoFilter,
-  ]);
+  }, [restaurantes, searchTerm, selectedTiposCocina, selectedLocalizacion]);
 
-  useEffect(() => {
-    cargarRestaurantes();
-  }, []);
-
+  // Actualizar listas de tipos y localizaciones, y aplicar filtros
   useEffect(() => {
     const tipos = [
       ...new Set(restaurantes.map((r) => r["Tipo de cocina"])),
@@ -141,6 +107,7 @@ const RestauranteList = () => {
     aplicarFiltros();
   }, [restaurantes, aplicarFiltros]);
 
+  // Manejo de cambios en el formulario
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
@@ -148,6 +115,7 @@ const RestauranteList = () => {
     });
   };
 
+  // Envío del formulario para crear o actualizar restaurante
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -156,17 +124,14 @@ const RestauranteList = () => {
         Nombre: formData.Nombre,
         "Tipo de cocina": formData["Tipo de cocina"],
         Localización: formData["Localización"],
-        Fecha: formData.Fecha || "", // Si no hay fecha, se envía como vacío
+        Fecha: formData.Fecha || "",
       };
 
       console.log("Datos a enviar:", dataToSend);
 
       if (isEditing && editingId) {
         console.log("Editando restaurante con ID:", editingId);
-        const response = await api.put(
-          `/restaurantes/${editingId}`,
-          dataToSend
-        );
+        const response = await api.put(`/restaurantes/${editingId}`, dataToSend);
         console.log("Respuesta de edición:", response.data);
       } else {
         console.log("Creando nuevo restaurante");
@@ -182,6 +147,7 @@ const RestauranteList = () => {
     }
   };
 
+  // Función para eliminar un restaurante
   const handleDelete = async (id) => {
     if (window.confirm("¿Estás seguro de querer eliminar este restaurante?")) {
       try {
@@ -196,6 +162,7 @@ const RestauranteList = () => {
     }
   };
 
+  // Función para preparar la edición
   const handleEdit = (restaurante) => {
     setFormData({
       Nombre: restaurante.Nombre || "",
@@ -207,6 +174,7 @@ const RestauranteList = () => {
     setEditingId(restaurante._id);
   };
 
+  // Reiniciar formulario
   const resetForm = () => {
     setFormData({
       Nombre: "",
@@ -218,11 +186,17 @@ const RestauranteList = () => {
     setEditingId(null);
   };
 
+  // Abrir modal de detalles
+  const handleRestaurantClick = (id) => {
+    setSelectedRestauranteId(id);
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="container">
       <h2 className="title">Gestión de Restaurantes</h2>
 
-      {/* Formulario */}
+      {/* Formulario para crear o editar restaurante */}
       <div className="form-container">
         <form onSubmit={handleSubmit}>
           <div className="form-inputs">
@@ -269,7 +243,7 @@ const RestauranteList = () => {
         </form>
       </div>
 
-      {/* Filtros */}
+      {/* Sección de filtros */}
       <div className="filters-section">
         {/* Búsqueda por nombre */}
         <div className="filter-item">
@@ -282,7 +256,7 @@ const RestauranteList = () => {
           />
         </div>
 
-        {/* Dropdown de Tipos de Cocina */}
+        {/* Dropdown para seleccionar tipos de cocina */}
         <div className="filter-item dropdown-container">
           <button
             onClick={() => setShowDropdown((prev) => !prev)}
@@ -293,7 +267,6 @@ const RestauranteList = () => {
               : "Seleccionar Tipos de Cocina"}
             <span className="dropdown-arrow">▼</span>
           </button>
-
           {showDropdown && (
             <div className="dropdown-menu dropdown-tipos-cocina">
               {tiposCocina.map((tipo) => (
@@ -312,7 +285,7 @@ const RestauranteList = () => {
           )}
         </div>
 
-        {/* Dropdown de Localización */}
+        {/* Dropdown para seleccionar localización */}
         <div className="filter-item dropdown-container">
           <button
             onClick={() => setShowLocalizacionDropdown((prev) => !prev)}
@@ -321,7 +294,6 @@ const RestauranteList = () => {
             {selectedLocalizacion || "Seleccionar Localización"}
             <span className="dropdown-arrow">▼</span>
           </button>
-
           {showLocalizacionDropdown && (
             <div className="dropdown-menu dropdown-localizacion">
               {localizaciones.map((loc) => (
@@ -342,9 +314,9 @@ const RestauranteList = () => {
         </div>
       </div>
 
-      {/* Filtros por visitas y ordenación */}
+      {/* Sección de botones para filtrar por visitas y ordenar */}
       <div className="visit-sort-section">
-        {/* Botones de visitas */}
+        {/* Filtro por visitas */}
         <div className="visit-buttons">
           <button onClick={() => setVisitadoFilter("")} className="btn">
             Todos
@@ -392,7 +364,12 @@ const RestauranteList = () => {
         </div>
       </div>
 
-      {/* Lista */}
+      {/* Mostrar el número de resultados */}
+      <div className="results-count">
+        <p>{`Resultados: ${filteredRestaurantes.length}`}</p>
+      </div>
+
+      {/* Lista de restaurantes */}
       <div className="restaurant-list">
         {filteredRestaurantes.map((restaurante) => (
           <div
@@ -403,10 +380,10 @@ const RestauranteList = () => {
             <div className="restaurant-info">
               <h3 className="restaurant-title">{restaurante.Nombre}</h3>
               <p className="restaurant-details">
-                {restaurante["Tipo de cocina"]} - {restaurante["Localización"]}
+                {restaurante["Tipo de cocina"]} - {restaurante["Localización"]}{" "}
                 {restaurante.visitas?.length > 0
-                  ? ` - ${restaurante.visitas.length} visita(s)`
-                  : " - No visitado"}
+                  ? `- ${restaurante.visitas.length} visita(s)`
+                  : "- No visitado"}
               </p>
               <ul className="visit-list">
                 {restaurante.visitas?.length > 0 ? (
@@ -422,29 +399,9 @@ const RestauranteList = () => {
               </ul>
             </div>
             <div className="action-buttons">
-              {/*<button
-                onClick={async (e) => {
-                  e.stopPropagation(); // Evita que el clic navegue al modal
-                  try {
-                    const response = await api.put(
-                      `/restaurantes/${restaurante._id}/visita`
-                    );
-                    console.log("Visita registrada:", response.data);
-                    await cargarRestaurantes();
-                  } catch (error) {
-                    console.error("Error al registrar la visita:", error);
-                    alert(
-                      `Error al registrar la visita: ${error.response?.data?.message || error.message}`
-                    );
-                  }
-                }}
-                className="btn btn-primary"
-              >
-                Registrar Visita
-              </button>*/}
               <button
                 onClick={(e) => {
-                  e.stopPropagation(); // Evita que el clic navegue al modal
+                  e.stopPropagation();
                   handleEdit(restaurante);
                 }}
                 className="btn btn-success"
@@ -453,7 +410,7 @@ const RestauranteList = () => {
               </button>
               <button
                 onClick={(e) => {
-                  e.stopPropagation(); // Evita que el clic navegue al modal
+                  e.stopPropagation();
                   handleDelete(restaurante._id);
                 }}
                 className="btn btn-danger"
@@ -465,12 +422,12 @@ const RestauranteList = () => {
         ))}
       </div>
 
-      {/* Modal de Detalles del Restaurante */}
+      {/* Modal de detalles */}
       <RestauranteDetailsModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         restauranteId={selectedRestauranteId}
-        onUpdate={() => cargarRestaurantes()} // Recarga la lista de restaurantes
+        onUpdate={cargarRestaurantes}
       />
     </div>
   );
