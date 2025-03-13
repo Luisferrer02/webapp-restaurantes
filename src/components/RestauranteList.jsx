@@ -50,6 +50,8 @@ const RestauranteList = () => {
   // Función para cargar restaurantes. Si readOnly es true, se carga la lista de "luisferrer2002@gmail.com"
   const cargarRestaurantes = useCallback(async () => {
     try {
+      // Si estamos en modo readOnly, usamos el endpoint público.
+      const endpoint = readOnly ? "/public" : "/";
       const params = {
         visitado:
           visitadoFilter === "visitado"
@@ -57,9 +59,10 @@ const RestauranteList = () => {
             : visitadoFilter === "no-visitado"
             ? "no"
             : undefined,
-        owner: readOnly ? "luisferrer2002@gmail.com" : undefined, // Si está en modo readOnly, forzamos el owner
+        // Si no está en modo readOnly y se especifica owner, se usará ese email
+        owner: readOnly ? undefined : undefined, // Aquí podrías agregar más lógica según lo necesites
       };
-      const response = await api.get("/restaurantes", { params });
+      const response = await api.get(endpoint, { params });
       setOriginalRestaurantes(response.data.restaurantes);
       setFilteredRestaurantes(response.data.restaurantes);
     } catch (error) {
