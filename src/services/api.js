@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://backend-restaurantes-wq8c.onrender.com/api', // Cambia esto al URL de tu backend en el futuro
+  baseURL: 'https://backend-restaurantes-wq8c.onrender.com/api/restaurantes', // Cambia esto al URL de tu backend en el futuro
 });
 
 // Interceptor para agregar el token a cada solicitud
