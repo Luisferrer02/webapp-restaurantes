@@ -4,24 +4,26 @@ import "./Restaurante.css";
 import RestauranteDetailsModal from "./RestauranteDetailsModal";
 
 const RestauranteList = () => {
+  // Estados para la lista de restaurantes
   const [originalRestaurantes, setOriginalRestaurantes] = useState([]);
   const [filteredRestaurantes, setFilteredRestaurantes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Estados para tipos de cocina y localizaciones
   const [tiposCocina, setTiposCocina] = useState([]);
   const [selectedTiposCocina, setSelectedTiposCocina] = useState([]);
   const [showTiposDropdown, setShowTiposDropdown] = useState(false);
   const [localizaciones, setLocalizaciones] = useState([]);
   const [showLocalizacionDropdown, setShowLocalizacionDropdown] = useState(false);
   const [selectedLocalizacion, setSelectedLocalizacion] = useState("");
+
+  // Otros estados
   const [visitadoFilter, setVisitadoFilter] = useState("");
   const [activeSort, setActiveSort] = useState({ criterion: null, order: null });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRestauranteId, setSelectedRestauranteId] = useState(null);
-  
-  // Estado para el modo de visualización: false = modo normal (permite edición), true = solo visualización
-  const [readOnly, setReadOnly] = useState(false);
 
-  // Estados y funciones para el formulario
+  // Estados y funciones para el formulario de creación/edición
   const [formData, setFormData] = useState({
     Nombre: "",
     "Tipo de cocina": "",
@@ -31,6 +33,7 @@ const RestauranteList = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  // Función para alternar el orden de ordenación
   const toggleSort = (criterion) => {
     setActiveSort((prev) => {
       if (prev.criterion !== criterion) {
@@ -47,7 +50,7 @@ const RestauranteList = () => {
     });
   };
 
-  // Función para cargar restaurantes. Si readOnly es true, se carga la lista de "luisferrer2002@gmail.com"
+  // Función para cargar restaurantes desde el backend (filtrado por "visitado" se hace en backend)
   const cargarRestaurantes = useCallback(async () => {
     try {
       // Si estamos en modo readOnly, usamos el endpoint público.
@@ -59,35 +62,43 @@ const RestauranteList = () => {
             : visitadoFilter === "no-visitado"
             ? "no"
             : undefined,
-        // Si no está en modo readOnly y se especifica owner, se usará ese email
-        owner: readOnly ? undefined : undefined, // Aquí podrías agregar más lógica según lo necesites
       };
-      const response = await api.get(endpoint, { params });
+      const response = await api.get("/restaurantes", { params });
+      console.log("Datos recibidos:", response.data);
       setOriginalRestaurantes(response.data.restaurantes);
       setFilteredRestaurantes(response.data.restaurantes);
     } catch (error) {
       console.error("Error al cargar restaurantes:", error);
       alert("Error al cargar restaurantes.");
     }
-  }, [visitadoFilter, readOnly]);
+  }, [visitadoFilter]);
 
+  // Función para aplicar filtros y orden en el frontend
   const aplicarFiltros = useCallback(() => {
     let filtered = [...originalRestaurantes];
+
+    // Filtrado por término de búsqueda
     if (searchTerm) {
       filtered = filtered.filter((rest) =>
         rest.Nombre.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
+
+    // Filtrado por tipos de cocina
     if (selectedTiposCocina.length > 0) {
       filtered = filtered.filter((rest) =>
         selectedTiposCocina.includes(rest["Tipo de cocina"])
       );
     }
+
+    // Filtrado por localización
     if (selectedLocalizacion) {
       filtered = filtered.filter(
         (rest) => rest["Localización"] === selectedLocalizacion
       );
     }
+
+    // Aplicar ordenación según activeSort
     if (activeSort.criterion) {
       filtered.sort((a, b) => {
         let fieldA, fieldB;
@@ -95,11 +106,11 @@ const RestauranteList = () => {
           fieldA =
             a.visitas && a.visitas.length > 0
               ? new Date(a.visitas[a.visitas.length - 1].fecha)
-              : null;
+              : new Date(0);
           fieldB =
             b.visitas && b.visitas.length > 0
               ? new Date(b.visitas[b.visitas.length - 1].fecha)
-              : null;
+              : new Date(0);
         } else if (activeSort.criterion === "nombre") {
           fieldA = a.Nombre;
           fieldB = b.Nombre;
@@ -127,6 +138,7 @@ const RestauranteList = () => {
   }, [cargarRestaurantes]);
 
   useEffect(() => {
+    // Actualizar listas de tipos de cocina y localizaciones
     const tipos = [...new Set(originalRestaurantes.map((r) => r["Tipo de cocina"]))].sort((a, b) =>
       a.localeCompare(b)
     );
@@ -140,6 +152,7 @@ const RestauranteList = () => {
     aplicarFiltros();
   }, [searchTerm, selectedTiposCocina, selectedLocalizacion, activeSort, aplicarFiltros]);
 
+  // Manejo de inputs del formulario de creación/edición
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -153,6 +166,7 @@ const RestauranteList = () => {
         Localización: formData["Localización"],
         Fecha: formData.Fecha || "",
       };
+
       if (isEditing && editingId) {
         await api.put(`/restaurantes/${editingId}`, dataToSend);
       } else {
@@ -194,13 +208,11 @@ const RestauranteList = () => {
   };
 
   const handleRestaurantClick = (id) => {
-    if (!readOnly) {
-      setSelectedRestauranteId(id);
-      setIsModalOpen(true);
-    }
+    setSelectedRestauranteId(id);
+    setIsModalOpen(true);
   };
 
-  // Manejo del dropdown de tipos de cocina
+  // Función para manejar el cambio de selección en el dropdown de tipos de cocina
   const handleTipoCocinaChange = (e) => {
     const value = e.target.value;
     setSelectedTiposCocina((prev) => {
@@ -212,7 +224,7 @@ const RestauranteList = () => {
     });
   };
 
-  // Asigna clases a los botones de filtro de visitas
+  // Asigna clases a los botones de filtro de visitas según estén activos o no
   const getVisitButtonClass = (filterValue) => {
     return visitadoFilter === filterValue ? "btn btn-primary" : "btn btn-secondary";
   };
@@ -221,44 +233,35 @@ const RestauranteList = () => {
     <div className="container">
       <h2 className="title">Gestión de Restaurantes</h2>
 
-      {/* Botón para cambiar entre modo normal y solo visualización de la lista pública de luisferrer2002@gmail.com */}
-      <div style={{ marginBottom: "10px" }}>
-        {readOnly ? (
-          <button className="btn btn-secondary" onClick={() => { setReadOnly(false); cargarRestaurantes(); }}>
-            Ver mis restaurantes (completo)
+      {/* Formulario para crear/editar */}
+      <div className="form-container">
+        <form onSubmit={handleSubmit}>
+          <div className="form-inputs">
+            <input type="text" name="Nombre" placeholder="Nombre del restaurante" value={formData.Nombre} onChange={handleInputChange} required className="input" />
+            <input type="text" name="Tipo de cocina" placeholder="Tipo de cocina" value={formData["Tipo de cocina"]} onChange={handleInputChange} required className="input" />
+            <input type="text" name="Localización" placeholder="Localización" value={formData["Localización"]} onChange={handleInputChange} required className="input" />
+          </div>
+          <button type="submit" className="btn btn-primary">
+            {isEditing ? "Actualizar" : "Crear"} Restaurante
           </button>
-        ) : (
-          <button className="btn btn-secondary" onClick={() => { setReadOnly(true); cargarRestaurantes(); }}>
-            Ver lista pública de luisferrer2002@gmail.com
-          </button>
-        )}
-      </div>
-
-      {/* Formulario (se muestra solo en modo normal) */}
-      {!readOnly && (
-        <div className="form-container">
-          <form onSubmit={handleSubmit}>
-            <div className="form-inputs">
-              <input type="text" name="Nombre" placeholder="Nombre del restaurante" value={formData.Nombre} onChange={handleInputChange} required className="input" />
-              <input type="text" name="Tipo de cocina" placeholder="Tipo de cocina" value={formData["Tipo de cocina"]} onChange={handleInputChange} required className="input" />
-              <input type="text" name="Localización" placeholder="Localización" value={formData["Localización"]} onChange={handleInputChange} required className="input" />
-            </div>
-            <button type="submit" className="btn btn-primary">
-              {isEditing ? "Actualizar" : "Crear"} Restaurante
+          {isEditing && (
+            <button type="button" onClick={resetForm} className="btn btn-secondary">
+              Cancelar
             </button>
-            {isEditing && (
-              <button type="button" onClick={resetForm} className="btn btn-secondary">
-                Cancelar
-              </button>
-            )}
-          </form>
-        </div>
-      )}
+          )}
+        </form>
+      </div>
 
       {/* Sección de filtros */}
       <div className="filters-section">
         <div className="filter-item">
-          <input type="text" placeholder="Buscar restaurantes..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="search-input" />
+          <input
+            type="text"
+            placeholder="Buscar restaurantes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
         </div>
         <div className="filter-item dropdown-container">
           <button onClick={() => setShowTiposDropdown((prev) => !prev)} className="dropdown-button">
@@ -346,12 +349,7 @@ const RestauranteList = () => {
       {/* Lista de restaurantes */}
       <div className="restaurant-list">
         {filteredRestaurantes.map((restaurante) => (
-          <div
-            key={restaurante._id}
-            className="restaurant-card"
-            onClick={() => handleRestaurantClick(restaurante._id)}
-            style={{ cursor: readOnly ? "default" : "pointer" }}
-          >
+          <div key={restaurante._id} className="restaurant-card" onClick={() => handleRestaurantClick(restaurante._id)}>
             <div className="restaurant-info">
               <h3 className="restaurant-title">{restaurante.Nombre}</h3>
               <p className="restaurant-details">
@@ -370,35 +368,25 @@ const RestauranteList = () => {
                 )}
               </ul>
             </div>
-            {!readOnly && (
-              <div className="action-buttons">
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleEdit(restaurante); }}
-                  className="btn btn-success"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(restaurante._id); }}
-                  className="btn btn-danger"
-                >
-                  Eliminar
-                </button>
-              </div>
-            )}
+            <div className="action-buttons">
+              <button onClick={(e) => { e.stopPropagation(); handleEdit(restaurante); }} className="btn btn-success">
+                Editar
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); handleDelete(restaurante._id); }} className="btn btn-danger">
+                Eliminar
+              </button>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Modal de detalles (si no es readOnly, se pueden abrir detalles para editar) */}
-      {!readOnly && (
-        <RestauranteDetailsModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          restauranteId={selectedRestauranteId}
-          onUpdate={cargarRestaurantes}
-        />
-      )}
+      {/* Modal de detalles */}
+      <RestauranteDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        restauranteId={selectedRestauranteId}
+        onUpdate={cargarRestaurantes}
+      />
     </div>
   );
 };
