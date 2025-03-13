@@ -2,17 +2,33 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: "https://backend-restaurantes-wq8c.onrender.com/api",
+  //baseURL: "https://backend-restaurantes-wq8c.onrender.com/api",
+  baseURL: "http://localhost:5001/api",
 });
 
-// Interceptor para añadir el token a cada solicitud (si existe)
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    // Only add token for non-public endpoints
+    if (!config.url.includes('/public')) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor to handle auth errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Si el error es 400 y cumple cierta condición, puedes decidir ignorarlo o notificarlo de forma menos intrusiva
-    if (error.response && error.response.status === 400) {
-      console.warn("Error 400 ignorado:", error.response.data);
-      return Promise.resolve(error.response);
+    if (error.response && error.response.status === 401) {
+      // Handle token expiration
+      localStorage.removeItem('token');
+      // Optionally redirect to login
     }
     return Promise.reject(error);
   }

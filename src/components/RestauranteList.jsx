@@ -1,16 +1,15 @@
-// src/components/RestauranteList.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
 import "./Restaurante.css";
 import RestauranteDetailsModal from "./RestauranteDetailsModal";
 
-const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
-  // Estados para la lista de restaurantes
+const RestauranteList = () => {
+  // States for restaurants and UI features
   const [originalRestaurantes, setOriginalRestaurantes] = useState([]);
   const [filteredRestaurantes, setFilteredRestaurantes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Estados para tipos de cocina y localizaciones
+  // States for filtering options
   const [tiposCocina, setTiposCocina] = useState([]);
   const [selectedTiposCocina, setSelectedTiposCocina] = useState([]);
   const [showTiposDropdown, setShowTiposDropdown] = useState(false);
@@ -18,13 +17,15 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
   const [showLocalizacionDropdown, setShowLocalizacionDropdown] = useState(false);
   const [selectedLocalizacion, setSelectedLocalizacion] = useState("");
 
-  // Otros estados
+  // Additional filters and sorting
   const [visitadoFilter, setVisitadoFilter] = useState("");
   const [activeSort, setActiveSort] = useState({ criterion: null, order: null });
+
+  // Modal and selection states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRestauranteId, setSelectedRestauranteId] = useState(null);
 
-  // Estados y funciones para el formulario de creación/edición
+  // Form states for creation/editing
   const [formData, setFormData] = useState({
     Nombre: "",
     "Tipo de cocina": "",
@@ -34,32 +35,16 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  // Estado para el modo de visualización; si se recibe por props, lo usamos; de lo contrario, es false
-  const [readOnly, setReadOnly] = useState(externalReadOnly);
+  // Instead of using a readOnly boolean, we now use viewMode:
+  // "private" (full access) or "public" (read-only)
+  const [viewMode, setViewMode] = useState("private");
+  const [loading, setLoading] = useState(false);
 
-  const toggleSort = (criterion) => {
-    setActiveSort((prev) => {
-      if (prev.criterion !== criterion) {
-        return { criterion, order: "asc" };
-      } else {
-        if (prev.order === "asc") {
-          return { criterion, order: "desc" };
-        } else if (prev.order === "desc") {
-          return { criterion: null, order: null };
-        } else {
-          return { criterion, order: "asc" };
-        }
-      }
-    });
-  };
-
-  // Función para cargar restaurantes desde el backend
-  // Según el modo:
-  // - readOnly: "/restaurantes/public"
-  // - normal: "/restaurantes"
-  const cargarRestaurantes = useCallback(async () => {
+  // Memoized fetch function to load restaurants based on viewMode and visitadoFilter
+  const fetchRestaurantes = useCallback(async () => {
+    setLoading(true);
     try {
-      const endpoint = readOnly ? "/restaurantes/public" : "/restaurantes";
+      const endpoint = viewMode === "public" ? "/restaurantes/public" : "/restaurantes";
       const params = {};
       if (visitadoFilter === "visitado") {
         params.visitado = "si";
@@ -68,16 +53,20 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
       }
       const response = await api.get(endpoint, { params });
       console.log("Datos recibidos:", response.data);
-      // Aseguramos que response.data.restaurantes sea un array
       const restaurantes = response.data.restaurantes || [];
       setOriginalRestaurantes(restaurantes);
       setFilteredRestaurantes(restaurantes);
     } catch (error) {
       console.error("Error al cargar restaurantes:", error);
       alert("Error al cargar restaurantes.");
+      setOriginalRestaurantes([]);
+      setFilteredRestaurantes([]);
+    } finally {
+      setLoading(false);
     }
-  }, [visitadoFilter, readOnly]);
+  }, [viewMode, visitadoFilter]);
 
+  // Apply filters and sorting to the original list
   const aplicarFiltros = useCallback(() => {
     let filtered = [...originalRestaurantes];
     if (searchTerm) {
@@ -129,28 +118,62 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
     setFilteredRestaurantes(filtered);
   }, [originalRestaurantes, searchTerm, selectedTiposCocina, selectedLocalizacion, activeSort]);
 
+  // Fetch restaurants when viewMode or visitadoFilter changes
   useEffect(() => {
-    cargarRestaurantes();
-  }, [cargarRestaurantes]);
+    fetchRestaurantes();
+  }, [fetchRestaurantes]);
 
+  // Update filtering options and apply filters when the list changes
   useEffect(() => {
-    const tipos = [
-      ...new Set(originalRestaurantes.map((r) => r["Tipo de cocina"])),
-    ].sort((a, b) => a.localeCompare(b));
-    const locs = [
-      ...new Set(originalRestaurantes.map((r) => r["Localización"])),
-    ];
+    const tipos = [...new Set(originalRestaurantes.map((r) => r["Tipo de cocina"]))].sort((a, b) =>
+      a.localeCompare(b)
+    );
+    const locs = [...new Set(originalRestaurantes.map((r) => r["Localización"]))];
     setTiposCocina(tipos);
     setLocalizaciones(locs);
     aplicarFiltros();
   }, [originalRestaurantes, aplicarFiltros]);
 
+  // Reapply filters when filtering criteria change
   useEffect(() => {
     aplicarFiltros();
   }, [searchTerm, selectedTiposCocina, selectedLocalizacion, activeSort, aplicarFiltros]);
 
+  // Toggle view between "private" and "public"
+  const handleToggleView = () => {
+    setViewMode((prevMode) => (prevMode === "private" ? "public" : "private"));
+  };
+
+  // Toggle sorting order and criterion
+  const toggleSort = (criterion) => {
+    setActiveSort((prev) => {
+      if (prev.criterion !== criterion) {
+        return { criterion, order: "asc" };
+      } else {
+        if (prev.order === "asc") {
+          return { criterion, order: "desc" };
+        } else if (prev.order === "desc") {
+          return { criterion: null, order: null };
+        } else {
+          return { criterion, order: "asc" };
+        }
+      }
+    });
+  };
+
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const resetForm = () => {
+    setFormData({
+      Nombre: "",
+      "Tipo de cocina": "",
+      Localización: "",
+      Fecha: "",
+    });
+    setIsEditing(false);
+    setEditingId(null);
   };
 
   const handleSubmit = async (e) => {
@@ -167,7 +190,7 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
       } else {
         await api.post("/restaurantes", dataToSend);
       }
-      await cargarRestaurantes();
+      await fetchRestaurantes();
       resetForm();
     } catch (error) {
       alert(`Error: ${error.response?.data?.message || error.message}`);
@@ -178,7 +201,7 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
     if (window.confirm("¿Estás seguro de querer eliminar este restaurante?")) {
       try {
         await api.delete(`/restaurantes/${id}`);
-        cargarRestaurantes();
+        fetchRestaurantes();
       } catch (error) {
         alert(`Error al eliminar: ${error.response?.data?.message || error.message}`);
       }
@@ -196,19 +219,8 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
     setEditingId(restaurante._id);
   };
 
-  const resetForm = () => {
-    setFormData({
-      Nombre: "",
-      "Tipo de cocina": "",
-      Localización: "",
-      Fecha: "",
-    });
-    setIsEditing(false);
-    setEditingId(null);
-  };
-
   const handleRestaurantClick = (id) => {
-    if (!readOnly) {
+    if (viewMode === "private") {
       setSelectedRestauranteId(id);
       setIsModalOpen(true);
     }
@@ -226,42 +238,22 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
   };
 
   const getVisitButtonClass = (filterValue) => {
-    return visitadoFilter === filterValue
-      ? "btn btn-primary"
-      : "btn btn-secondary";
+    return visitadoFilter === filterValue ? "btn btn-primary" : "btn btn-secondary";
   };
 
   return (
     <div className="container">
       <h2 className="title">Gestión de Restaurantes</h2>
 
-      {/* Botón para cambiar entre modo normal y modo solo visualización */}
+      {/* Toggle button for view mode */}
       <div style={{ marginBottom: "10px" }}>
-        {readOnly ? (
-          <button
-            className="btn btn-secondary"
-            onClick={() => {
-              setReadOnly(false);
-              cargarRestaurantes();
-            }}
-          >
-            Ver mis restaurantes (completo)
-          </button>
-        ) : (
-          <button
-            className="btn btn-secondary"
-            onClick={() => {
-              setReadOnly(true);
-              cargarRestaurantes();
-            }}
-          >
-            Ver lista pública de luisferrer2002@gmail.com
-          </button>
-        )}
+        <button className="btn btn-secondary" onClick={handleToggleView}>
+          {viewMode === "private" ? "Ver lista pública" : "Ver mis restaurantes"}
+        </button>
       </div>
 
-      {/* Formulario (solo se muestra en modo normal) */}
-      {!readOnly && (
+      {/* Form for creating/editing restaurants (only in private mode) */}
+      {viewMode === "private" && (
         <div className="form-container">
           <form onSubmit={handleSubmit}>
             <div className="form-inputs">
@@ -297,11 +289,7 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
               {isEditing ? "Actualizar" : "Crear"} Restaurante
             </button>
             {isEditing && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="btn btn-secondary"
-              >
+              <button type="button" onClick={resetForm} className="btn btn-secondary">
                 Cancelar
               </button>
             )}
@@ -309,7 +297,7 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
         </div>
       )}
 
-      {/* Sección de filtros */}
+      {/* Filters */}
       <div className="filters-section">
         <div className="filter-item">
           <input
@@ -321,10 +309,7 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
           />
         </div>
         <div className="filter-item dropdown-container">
-          <button
-            onClick={() => setShowTiposDropdown((prev) => !prev)}
-            className="dropdown-button"
-          >
+          <button onClick={() => setShowTiposDropdown((prev) => !prev)} className="dropdown-button">
             {selectedTiposCocina.length > 0
               ? `Seleccionados: ${selectedTiposCocina.join(", ")}`
               : "Seleccionar Tipos de Cocina"}
@@ -348,10 +333,7 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
           )}
         </div>
         <div className="filter-item dropdown-container">
-          <button
-            onClick={() => setShowLocalizacionDropdown((prev) => !prev)}
-            className="dropdown-button"
-          >
+          <button onClick={() => setShowLocalizacionDropdown((prev) => !prev)} className="dropdown-button">
             {selectedLocalizacion || "Seleccionar Localización"}
             <span className="dropdown-arrow">▼</span>
           </button>
@@ -375,37 +357,21 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
         </div>
       </div>
 
-      {/* Botones de filtro de visitas y ordenación toggle */}
+      {/* Visit filter and sorting */}
       <div className="visit-sort-section">
         <div className="visit-buttons">
-          <button
-            onClick={() => setVisitadoFilter("")}
-            className={getVisitButtonClass("")}
-          >
+          <button onClick={() => setVisitadoFilter("")} className={getVisitButtonClass("")}>
             Todos
           </button>
-          <button
-            onClick={() => setVisitadoFilter("visitado")}
-            className={getVisitButtonClass("visitado")}
-          >
+          <button onClick={() => setVisitadoFilter("visitado")} className={getVisitButtonClass("visitado")}>
             Visitados
           </button>
-          <button
-            onClick={() => setVisitadoFilter("no-visitado")}
-            className={getVisitButtonClass("no-visitado")}
-          >
+          <button onClick={() => setVisitadoFilter("no-visitado")} className={getVisitButtonClass("no-visitado")}>
             No Visitados
           </button>
         </div>
         <div className="sort-section">
-          <button
-            onClick={() => toggleSort("fecha")}
-            className={
-              activeSort.criterion === "fecha"
-                ? "btn btn-primary"
-                : "btn btn-secondary"
-            }
-          >
+          <button onClick={() => toggleSort("fecha")} className={activeSort.criterion === "fecha" ? "btn btn-primary" : "btn btn-secondary"}>
             Ordenar por Fecha{" "}
             {activeSort.criterion === "fecha"
               ? activeSort.order === "asc"
@@ -415,14 +381,7 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
                 : ""
               : ""}
           </button>
-          <button
-            onClick={() => toggleSort("nombre")}
-            className={
-              activeSort.criterion === "nombre"
-                ? "btn btn-primary"
-                : "btn btn-secondary"
-            }
-          >
+          <button onClick={() => toggleSort("nombre")} className={activeSort.criterion === "nombre" ? "btn btn-primary" : "btn btn-secondary"}>
             Ordenar por Nombre{" "}
             {activeSort.criterion === "nombre"
               ? activeSort.order === "asc"
@@ -432,14 +391,7 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
                 : ""
               : ""}
           </button>
-          <button
-            onClick={() => toggleSort("tipo")}
-            className={
-              activeSort.criterion === "tipo"
-                ? "btn btn-primary"
-                : "btn btn-secondary"
-            }
-          >
+          <button onClick={() => toggleSort("tipo")} className={activeSort.criterion === "tipo" ? "btn btn-primary" : "btn btn-secondary"}>
             Ordenar por Tipo de Cocina{" "}
             {activeSort.criterion === "tipo"
               ? activeSort.order === "asc"
@@ -452,74 +404,78 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
         </div>
       </div>
 
-      {/* Mostrar número de resultados */}
+      {/* Results count */}
       <div className="results-count">
         <p>{`Resultados: ${filteredRestaurantes ? filteredRestaurantes.length : 0}`}</p>
       </div>
 
-      {/* Lista de restaurantes */}
+      {/* Restaurant list */}
       <div className="restaurant-list">
-        {(filteredRestaurantes || []).map((restaurante) => (
-          <div
-            key={restaurante._id}
-            className="restaurant-card"
-            onClick={() => handleRestaurantClick(restaurante._id)}
-            style={{ cursor: readOnly ? "default" : "pointer" }}
-          >
-            <div className="restaurant-info">
-              <h3 className="restaurant-title">{restaurante.Nombre}</h3>
-              <p className="restaurant-details">
-                {restaurante["Tipo de cocina"]} - {restaurante["Localización"]}{" "}
-                {restaurante.visitas?.length > 0
-                  ? `- ${restaurante.visitas.length} visita(s)`
-                  : "- No visitado"}
-              </p>
-              <ul className="visit-list">
-                {restaurante.visitas?.length > 0 ? (
-                  restaurante.visitas.map((visita, index) => (
-                    <li key={index}>
-                      {new Date(visita.fecha).toLocaleDateString()} -{" "}
-                      {visita.comentario || "Sin comentario"}
-                    </li>
-                  ))
-                ) : (
-                  <li>No hay visitas registradas</li>
-                )}
-              </ul>
-            </div>
-            {!readOnly && (
-              <div className="action-buttons">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEdit(restaurante);
-                  }}
-                  className="btn btn-success"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(restaurante._id);
-                  }}
-                  className="btn btn-danger"
-                >
-                  Eliminar
-                </button>
+        {loading ? (
+          <p>Cargando restaurantes...</p>
+        ) : (
+          filteredRestaurantes.map((restaurante) => (
+            <div
+              key={restaurante._id}
+              className="restaurant-card"
+              onClick={() => handleRestaurantClick(restaurante._id)}
+              style={{ cursor: viewMode === "private" ? "pointer" : "default" }}
+            >
+              <div className="restaurant-info">
+                <h3 className="restaurant-title">{restaurante.Nombre}</h3>
+                <p className="restaurant-details">
+                  {restaurante["Tipo de cocina"]} - {restaurante["Localización"]}{" "}
+                  {restaurante.visitas?.length > 0
+                    ? `- ${restaurante.visitas.length} visita(s)`
+                    : "- No visitado"}
+                </p>
+                <ul className="visit-list">
+                  {restaurante.visitas?.length > 0 ? (
+                    restaurante.visitas.map((visita, index) => (
+                      <li key={index}>
+                        {new Date(visita.fecha).toLocaleDateString()} -{" "}
+                        {visita.comentario || "Sin comentario"}
+                      </li>
+                    ))
+                  ) : (
+                    <li>No hay visitas registradas</li>
+                  )}
+                </ul>
               </div>
-            )}
-          </div>
-        ))}
+              {viewMode === "private" && (
+                <div className="action-buttons">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(restaurante);
+                    }}
+                    className="btn btn-success"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(restaurante._id);
+                    }}
+                    className="btn btn-danger"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
-      {/* Modal de detalles (solo en modo normal) */}
-      {!readOnly && (
+      {/* Details modal (only in private view) */}
+      {viewMode === "private" && (
         <RestauranteDetailsModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           restauranteId={selectedRestauranteId}
-          onUpdate={cargarRestaurantes}
+          onUpdate={fetchRestaurantes}
         />
       )}
     </div>
