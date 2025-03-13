@@ -1,6 +1,5 @@
 // src/components/Auth.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import "./Auth.css";
 
@@ -8,18 +7,26 @@ const Auth = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: "", password: "", username: "" });
   const [error, setError] = useState("");
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (isLogin) {
-        const response = await api.post("/auth/login", { email: formData.email, password: formData.password });
+        const response = await api.post("/auth/login", { 
+          email: formData.email, 
+          password: formData.password 
+        });
         localStorage.setItem("token", response.data.token);
       } else {
-        await api.post("/auth/register", { email: formData.email, password: formData.password, username: formData.username });
-        // Auto-login tras registro:
-        const loginResponse = await api.post("/auth/login", { email: formData.email, password: formData.password });
+        await api.post("/auth/register", { 
+          email: formData.email, 
+          password: formData.password, 
+          username: formData.username 
+        });
+        const loginResponse = await api.post("/auth/login", { 
+          email: formData.email, 
+          password: formData.password 
+        });
         localStorage.setItem("token", loginResponse.data.token);
       }
       onAuthSuccess();
@@ -75,14 +82,6 @@ const Auth = ({ onAuthSuccess }) => {
       >
         {isLogin ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Inicia sesión"}
       </p>
-      {/* Botón para ver la lista pública de "luisferrer2002@gmail.com" */}
-      <button 
-        onClick={() => navigate("/public")} 
-        className="btn btn-secondary" 
-        style={{ marginTop: "20px" }}
-      >
-        Ver lista pública de luisferrer2002@gmail.com
-      </button>
     </div>
   );
 };
