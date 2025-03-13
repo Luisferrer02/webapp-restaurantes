@@ -1,11 +1,9 @@
-// src/App.jsx
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import RestauranteList from "./components/RestauranteList";
 import RestauranteDetails from "./components/RestauranteDetails";
 import Auth from "./components/Auth";
 import { jwtDecode } from "jwt-decode";
-
 
 const App = () => {
   const [authenticated, setAuthenticated] = useState(false);
@@ -15,11 +13,9 @@ const App = () => {
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        // Si el token no ha expirado, marcamos como autenticado
         if (decoded.exp * 1000 > Date.now()) {
           setAuthenticated(true);
         } else {
-          // Si expiró, eliminamos el token
           localStorage.removeItem("token");
         }
       } catch (err) {
@@ -29,7 +25,6 @@ const App = () => {
     }
   }, []);
 
-  // Función para cerrar sesión
   const handleLogout = () => {
     localStorage.removeItem("token");
     setAuthenticated(false);
@@ -38,7 +33,6 @@ const App = () => {
   return (
     <Router>
       <div>
-        {/* Botón de cerrar sesión (solo visible si el usuario está autenticado) */}
         {authenticated && (
           <button onClick={handleLogout} style={{ margin: "10px" }}>
             Cerrar Sesión
@@ -55,7 +49,6 @@ const App = () => {
               <Route path="*" element={<Navigate to="/" />} />
             </>
           ) : (
-            // Si no está autenticado, se muestra el componente de autenticación para cualquier otra ruta.
             <Route path="/*" element={<Auth onAuthSuccess={() => setAuthenticated(true)} />} />
           )}
         </Routes>
