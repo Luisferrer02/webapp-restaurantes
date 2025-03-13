@@ -6,15 +6,16 @@ const api = axios.create({
 });
 
 // Interceptor para añadir el token a cada solicitud (si existe)
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Si el error es 400 y cumple cierta condición, puedes decidir ignorarlo o notificarlo de forma menos intrusiva
+    if (error.response && error.response.status === 400) {
+      console.warn("Error 400 ignorado:", error.response.data);
+      return Promise.resolve(error.response);
     }
-    return config;
-  },
-  (error) => Promise.reject(error)
+    return Promise.reject(error);
+  }
 );
 
 export default api;

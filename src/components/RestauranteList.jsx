@@ -54,24 +54,24 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
   };
 
   // Función para cargar restaurantes desde el backend
-  // Usamos el endpoint según el modo:
+  // Según el modo:
   // - readOnly: "/restaurantes/public"
   // - normal: "/restaurantes"
   const cargarRestaurantes = useCallback(async () => {
     try {
       const endpoint = readOnly ? "/restaurantes/public" : "/restaurantes";
-      const params = {
-        visitado:
-          visitadoFilter === "visitado"
-            ? "si"
-            : visitadoFilter === "no-visitado"
-            ? "no"
-            : undefined,
-      };
+      const params = {};
+      if (visitadoFilter === "visitado") {
+        params.visitado = "si";
+      } else if (visitadoFilter === "no-visitado") {
+        params.visitado = "no";
+      }
       const response = await api.get(endpoint, { params });
       console.log("Datos recibidos:", response.data);
-      setOriginalRestaurantes(response.data.restaurantes);
-      setFilteredRestaurantes(response.data.restaurantes);
+      // Aseguramos que response.data.restaurantes sea un array
+      const restaurantes = response.data.restaurantes || [];
+      setOriginalRestaurantes(restaurantes);
+      setFilteredRestaurantes(restaurantes);
     } catch (error) {
       console.error("Error al cargar restaurantes:", error);
       alert("Error al cargar restaurantes.");
@@ -134,10 +134,12 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
   }, [cargarRestaurantes]);
 
   useEffect(() => {
-    const tipos = [...new Set(originalRestaurantes.map((r) => r["Tipo de cocina"]))].sort((a, b) =>
-      a.localeCompare(b)
-    );
-    const locs = [...new Set(originalRestaurantes.map((r) => r["Localización"]))];
+    const tipos = [
+      ...new Set(originalRestaurantes.map((r) => r["Tipo de cocina"])),
+    ].sort((a, b) => a.localeCompare(b));
+    const locs = [
+      ...new Set(originalRestaurantes.map((r) => r["Localización"])),
+    ];
     setTiposCocina(tipos);
     setLocalizaciones(locs);
     aplicarFiltros();
@@ -195,7 +197,12 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
   };
 
   const resetForm = () => {
-    setFormData({ Nombre: "", "Tipo de cocina": "", Localización: "", Fecha: "" });
+    setFormData({
+      Nombre: "",
+      "Tipo de cocina": "",
+      Localización: "",
+      Fecha: "",
+    });
     setIsEditing(false);
     setEditingId(null);
   };
@@ -219,7 +226,9 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
   };
 
   const getVisitButtonClass = (filterValue) => {
-    return visitadoFilter === filterValue ? "btn btn-primary" : "btn btn-secondary";
+    return visitadoFilter === filterValue
+      ? "btn btn-primary"
+      : "btn btn-secondary";
   };
 
   return (
@@ -288,7 +297,11 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
               {isEditing ? "Actualizar" : "Crear"} Restaurante
             </button>
             {isEditing && (
-              <button type="button" onClick={resetForm} className="btn btn-secondary">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="btn btn-secondary"
+              >
                 Cancelar
               </button>
             )}
@@ -308,7 +321,10 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
           />
         </div>
         <div className="filter-item dropdown-container">
-          <button onClick={() => setShowTiposDropdown((prev) => !prev)} className="dropdown-button">
+          <button
+            onClick={() => setShowTiposDropdown((prev) => !prev)}
+            className="dropdown-button"
+          >
             {selectedTiposCocina.length > 0
               ? `Seleccionados: ${selectedTiposCocina.join(", ")}`
               : "Seleccionar Tipos de Cocina"}
@@ -332,7 +348,10 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
           )}
         </div>
         <div className="filter-item dropdown-container">
-          <button onClick={() => setShowLocalizacionDropdown((prev) => !prev)} className="dropdown-button">
+          <button
+            onClick={() => setShowLocalizacionDropdown((prev) => !prev)}
+            className="dropdown-button"
+          >
             {selectedLocalizacion || "Seleccionar Localización"}
             <span className="dropdown-arrow">▼</span>
           </button>
@@ -359,40 +378,88 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
       {/* Botones de filtro de visitas y ordenación toggle */}
       <div className="visit-sort-section">
         <div className="visit-buttons">
-          <button onClick={() => setVisitadoFilter("")} className={getVisitButtonClass("")}>
+          <button
+            onClick={() => setVisitadoFilter("")}
+            className={getVisitButtonClass("")}
+          >
             Todos
           </button>
-          <button onClick={() => setVisitadoFilter("visitado")} className={getVisitButtonClass("visitado")}>
+          <button
+            onClick={() => setVisitadoFilter("visitado")}
+            className={getVisitButtonClass("visitado")}
+          >
             Visitados
           </button>
-          <button onClick={() => setVisitadoFilter("no-visitado")} className={getVisitButtonClass("no-visitado")}>
+          <button
+            onClick={() => setVisitadoFilter("no-visitado")}
+            className={getVisitButtonClass("no-visitado")}
+          >
             No Visitados
           </button>
         </div>
         <div className="sort-section">
-          <button onClick={() => toggleSort("fecha")} className={activeSort.criterion === "fecha" ? "btn btn-primary" : "btn btn-secondary"}>
+          <button
+            onClick={() => toggleSort("fecha")}
+            className={
+              activeSort.criterion === "fecha"
+                ? "btn btn-primary"
+                : "btn btn-secondary"
+            }
+          >
             Ordenar por Fecha{" "}
-            {activeSort.criterion === "fecha" ? (activeSort.order === "asc" ? "(Asc)" : activeSort.order === "desc" ? "(Desc)" : "") : ""}
+            {activeSort.criterion === "fecha"
+              ? activeSort.order === "asc"
+                ? "(Asc)"
+                : activeSort.order === "desc"
+                ? "(Desc)"
+                : ""
+              : ""}
           </button>
-          <button onClick={() => toggleSort("nombre")} className={activeSort.criterion === "nombre" ? "btn btn-primary" : "btn btn-secondary"}>
+          <button
+            onClick={() => toggleSort("nombre")}
+            className={
+              activeSort.criterion === "nombre"
+                ? "btn btn-primary"
+                : "btn btn-secondary"
+            }
+          >
             Ordenar por Nombre{" "}
-            {activeSort.criterion === "nombre" ? (activeSort.order === "asc" ? "(Asc)" : activeSort.order === "desc" ? "(Desc)" : "") : ""}
+            {activeSort.criterion === "nombre"
+              ? activeSort.order === "asc"
+                ? "(Asc)"
+                : activeSort.order === "desc"
+                ? "(Desc)"
+                : ""
+              : ""}
           </button>
-          <button onClick={() => toggleSort("tipo")} className={activeSort.criterion === "tipo" ? "btn btn-primary" : "btn btn-secondary"}>
+          <button
+            onClick={() => toggleSort("tipo")}
+            className={
+              activeSort.criterion === "tipo"
+                ? "btn btn-primary"
+                : "btn btn-secondary"
+            }
+          >
             Ordenar por Tipo de Cocina{" "}
-            {activeSort.criterion === "tipo" ? (activeSort.order === "asc" ? "(Asc)" : activeSort.order === "desc" ? "(Desc)" : "") : ""}
+            {activeSort.criterion === "tipo"
+              ? activeSort.order === "asc"
+                ? "(Asc)"
+                : activeSort.order === "desc"
+                ? "(Desc)"
+                : ""
+              : ""}
           </button>
         </div>
       </div>
 
       {/* Mostrar número de resultados */}
       <div className="results-count">
-        <p>{`Resultados: ${filteredRestaurantes.length}`}</p>
+        <p>{`Resultados: ${filteredRestaurantes ? filteredRestaurantes.length : 0}`}</p>
       </div>
 
       {/* Lista de restaurantes */}
       <div className="restaurant-list">
-        {filteredRestaurantes.map((restaurante) => (
+        {(filteredRestaurantes || []).map((restaurante) => (
           <div
             key={restaurante._id}
             className="restaurant-card"
@@ -403,13 +470,16 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
               <h3 className="restaurant-title">{restaurante.Nombre}</h3>
               <p className="restaurant-details">
                 {restaurante["Tipo de cocina"]} - {restaurante["Localización"]}{" "}
-                {restaurante.visitas?.length > 0 ? `- ${restaurante.visitas.length} visita(s)` : "- No visitado"}
+                {restaurante.visitas?.length > 0
+                  ? `- ${restaurante.visitas.length} visita(s)`
+                  : "- No visitado"}
               </p>
               <ul className="visit-list">
                 {restaurante.visitas?.length > 0 ? (
                   restaurante.visitas.map((visita, index) => (
                     <li key={index}>
-                      {new Date(visita.fecha).toLocaleDateString()} - {visita.comentario || "Sin comentario"}
+                      {new Date(visita.fecha).toLocaleDateString()} -{" "}
+                      {visita.comentario || "Sin comentario"}
                     </li>
                   ))
                 ) : (
@@ -420,13 +490,19 @@ const RestauranteList = ({ readOnly: externalReadOnly = false }) => {
             {!readOnly && (
               <div className="action-buttons">
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleEdit(restaurante); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(restaurante);
+                  }}
                   className="btn btn-success"
                 >
                   Editar
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(restaurante._id); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(restaurante._id);
+                  }}
                   className="btn btn-danger"
                 >
                   Eliminar
