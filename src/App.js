@@ -37,23 +37,29 @@ const App = () => {
 
   return (
     <Router>
-      {authenticated ? (
-        <div>
-          {/* Botón para cerrar sesión */}
+      <div>
+        {/* Botón de cerrar sesión (solo visible si el usuario está autenticado) */}
+        {authenticated && (
           <button onClick={handleLogout} style={{ margin: "10px" }}>
             Cerrar Sesión
           </button>
+        )}
+        <Routes>
+          {/* Ruta pública accesible sin autenticación */}
+          <Route path="/public" element={<RestauranteList readOnly={true} />} />
 
-          <Routes>
-            <Route path="/" element={<RestauranteList />} />
-            <Route path="/restaurantes/:id" element={<RestauranteDetails />} />
-            <Route path="/public" element={<RestauranteList readOnly={true} />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </div>
-      ) : (
-        <Auth onAuthSuccess={() => setAuthenticated(true)} />
-      )}
+          {authenticated ? (
+            <>
+              <Route path="/" element={<RestauranteList />} />
+              <Route path="/restaurantes/:id" element={<RestauranteDetails />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </>
+          ) : (
+            // Si no está autenticado, se muestra el componente de autenticación para cualquier otra ruta.
+            <Route path="/*" element={<Auth onAuthSuccess={() => setAuthenticated(true)} />} />
+          )}
+        </Routes>
+      </div>
     </Router>
   );
 };
