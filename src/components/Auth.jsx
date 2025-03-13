@@ -10,18 +10,28 @@ const Auth = ({ onAuthSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("handleSubmit - isLogin:", isLogin);
+    console.log("Form data:", formData);
     try {
       if (isLogin) {
+        console.log("Intentando iniciar sesión con email:", formData.email);
         const response = await api.post("/auth/login", { email: formData.email, password: formData.password });
+        console.log("Respuesta de login:", response.data);
         localStorage.setItem("token", response.data.token);
       } else {
-        await api.post("/auth/register", { email: formData.email, password: formData.password, username: formData.username });
-        // Auto-login tras registro:
+        console.log("Intentando registrarse con email:", formData.email, "y username:", formData.username);
+        const registerResponse = await api.post("/auth/register", { email: formData.email, password: formData.password, username: formData.username });
+        console.log("Respuesta de registro:", registerResponse.data);
+        // Auto-login tras registro
+        console.log("Intentando iniciar sesión automáticamente tras registro");
         const loginResponse = await api.post("/auth/login", { email: formData.email, password: formData.password });
+        console.log("Respuesta de auto-login:", loginResponse.data);
         localStorage.setItem("token", loginResponse.data.token);
       }
+      console.log("Autenticación exitosa, llamando onAuthSuccess()");
       onAuthSuccess();
     } catch (err) {
+      console.error("Error en autenticación:", err);
       setError(err.response?.data?.message || "Error en autenticación");
     }
   };
@@ -36,7 +46,10 @@ const Auth = ({ onAuthSuccess }) => {
               type="text"
               placeholder="Nombre de usuario"
               value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              onChange={(e) => {
+                console.log("Username cambiado:", e.target.value);
+                setFormData({ ...formData, username: e.target.value });
+              }}
               required
             />
           </div>
@@ -46,7 +59,10 @@ const Auth = ({ onAuthSuccess }) => {
             type="email"
             placeholder="Email"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={(e) => {
+              console.log("Email cambiado:", e.target.value);
+              setFormData({ ...formData, email: e.target.value });
+            }}
             required
           />
         </div>
@@ -55,7 +71,10 @@ const Auth = ({ onAuthSuccess }) => {
             type="password"
             placeholder="Contraseña"
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            onChange={(e) => {
+              console.log("Contraseña cambiada:", e.target.value);
+              setFormData({ ...formData, password: e.target.value });
+            }}
             required
           />
         </div>
@@ -64,7 +83,15 @@ const Auth = ({ onAuthSuccess }) => {
           {isLogin ? "Ingresar" : "Registrarse"}
         </button>
       </form>
-      <p onClick={() => { setIsLogin(!isLogin); setError(""); }} style={{ cursor: "pointer", color: "blue" }}>
+      <p
+        onClick={() => {
+          console.log("Cambiando modo de autenticación. isLogin antes:", isLogin);
+          setIsLogin(!isLogin);
+          setError("");
+          console.log("isLogin después del cambio:", !isLogin);
+        }}
+        style={{ cursor: "pointer", color: "blue" }}
+      >
         {isLogin ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Inicia sesión"}
       </p>
     </div>
