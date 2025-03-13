@@ -1,37 +1,29 @@
 // src/components/Auth.jsx
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
-import "./Auth.css"; // Puedes crear estilos específicos para la autenticación
+import "./Auth.css";
 
 const Auth = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: "", password: "", username: "" });
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("handleSubmit - isLogin:", isLogin);
-    console.log("Form data:", formData);
     try {
       if (isLogin) {
-        console.log("Intentando iniciar sesión con email:", formData.email);
         const response = await api.post("/auth/login", { email: formData.email, password: formData.password });
-        console.log("Respuesta de login:", response.data);
         localStorage.setItem("token", response.data.token);
       } else {
-        console.log("Intentando registrarse con email:", formData.email, "y username:", formData.username);
-        const registerResponse = await api.post("/auth/register", { email: formData.email, password: formData.password, username: formData.username });
-        console.log("Respuesta de registro:", registerResponse.data);
-        // Auto-login tras registro
-        console.log("Intentando iniciar sesión automáticamente tras registro");
+        await api.post("/auth/register", { email: formData.email, password: formData.password, username: formData.username });
+        // Auto-login tras registro:
         const loginResponse = await api.post("/auth/login", { email: formData.email, password: formData.password });
-        console.log("Respuesta de auto-login:", loginResponse.data);
         localStorage.setItem("token", loginResponse.data.token);
       }
-      console.log("Autenticación exitosa, llamando onAuthSuccess()");
       onAuthSuccess();
     } catch (err) {
-      console.error("Error en autenticación:", err);
       setError(err.response?.data?.message || "Error en autenticación");
     }
   };
@@ -46,10 +38,7 @@ const Auth = ({ onAuthSuccess }) => {
               type="text"
               placeholder="Nombre de usuario"
               value={formData.username}
-              onChange={(e) => {
-                console.log("Username cambiado:", e.target.value);
-                setFormData({ ...formData, username: e.target.value });
-              }}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               required
             />
           </div>
@@ -59,10 +48,7 @@ const Auth = ({ onAuthSuccess }) => {
             type="email"
             placeholder="Email"
             value={formData.email}
-            onChange={(e) => {
-              console.log("Email cambiado:", e.target.value);
-              setFormData({ ...formData, email: e.target.value });
-            }}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
           />
         </div>
@@ -71,10 +57,7 @@ const Auth = ({ onAuthSuccess }) => {
             type="password"
             placeholder="Contraseña"
             value={formData.password}
-            onChange={(e) => {
-              console.log("Contraseña cambiada:", e.target.value);
-              setFormData({ ...formData, password: e.target.value });
-            }}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
           />
         </div>
@@ -85,15 +68,21 @@ const Auth = ({ onAuthSuccess }) => {
       </form>
       <p
         onClick={() => {
-          console.log("Cambiando modo de autenticación. isLogin antes:", isLogin);
           setIsLogin(!isLogin);
           setError("");
-          console.log("isLogin después del cambio:", !isLogin);
         }}
         style={{ cursor: "pointer", color: "blue" }}
       >
         {isLogin ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Inicia sesión"}
       </p>
+      {/* Botón para ver la lista pública de "luisferrer2002@gmail.com" */}
+      <button 
+        onClick={() => navigate("/public")} 
+        className="btn btn-secondary" 
+        style={{ marginTop: "20px" }}
+      >
+        Ver lista pública de luisferrer2002@gmail.com
+      </button>
     </div>
   );
 };

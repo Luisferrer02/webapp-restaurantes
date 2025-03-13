@@ -47,6 +47,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<RestauranteList />} />
             <Route path="/restaurantes/:id" element={<RestauranteDetails />} />
+            <Route path="/public" element={<RestauranteList readOnly={true} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>
