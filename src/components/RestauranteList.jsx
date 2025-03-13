@@ -51,7 +51,7 @@ const RestauranteList = () => {
   const cargarRestaurantes = useCallback(async () => {
     try {
       // Si estamos en modo readOnly, usamos el endpoint público.
-      const endpoint = readOnly ? "/public" : "/";
+      const endpoint = readOnly ? "/restaurantes/public" : "/restaurantes";
       const params = {
         visitado:
           visitadoFilter === "visitado"
