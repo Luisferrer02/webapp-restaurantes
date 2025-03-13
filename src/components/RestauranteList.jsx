@@ -4,18 +4,26 @@ import "./Restaurante.css";
 import RestauranteDetailsModal from "./RestauranteDetailsModal";
 
 const RestauranteList = () => {
-  // Guardamos la lista original para poder restablecer el orden por defecto
+  // Estados para la lista de restaurantes
   const [originalRestaurantes, setOriginalRestaurantes] = useState([]);
   const [filteredRestaurantes, setFilteredRestaurantes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Estados para tipos de cocina y localizaciones
   const [tiposCocina, setTiposCocina] = useState([]);
+  const [selectedTiposCocina, setSelectedTiposCocina] = useState([]);
+  const [showTiposDropdown, setShowTiposDropdown] = useState(false);
   const [localizaciones, setLocalizaciones] = useState([]);
   const [showLocalizacionDropdown, setShowLocalizacionDropdown] = useState(false);
   const [selectedLocalizacion, setSelectedLocalizacion] = useState("");
+
+  // Otros estados
+  const [visitadoFilter, setVisitadoFilter] = useState("");
+  const [activeSort, setActiveSort] = useState({ criterion: null, order: null });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRestauranteId, setSelectedRestauranteId] = useState(null);
 
-  // Estados para el formulario de creación/edición
+  // Estados y funciones para el formulario de creación/edición
   const [formData, setFormData] = useState({
     Nombre: "",
     "Tipo de cocina": "",
@@ -24,22 +32,13 @@ const RestauranteList = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [selectedTiposCocina, setSelectedTiposCocina] = useState([]);
-  const [visitadoFilter, setVisitadoFilter] = useState("");
 
-  // Estado para ordenación:
-  // activeSort.criterion: "fecha", "nombre", "tipo" o null (por defecto)
-  // activeSort.order: "asc", "desc" o null (por defecto)
-  const [activeSort, setActiveSort] = useState({ criterion: null, order: null });
-
-  // Función que alterna el orden para un criterio dado
+  // Función para alternar el orden de ordenación
   const toggleSort = (criterion) => {
     setActiveSort((prev) => {
       if (prev.criterion !== criterion) {
-        // Si se selecciona un criterio distinto, se inicia en ascendente
         return { criterion, order: "asc" };
       } else {
-        // Si se vuelve a pulsar el mismo botón, se cicla: asc -> desc -> reset
         if (prev.order === "asc") {
           return { criterion, order: "desc" };
         } else if (prev.order === "desc") {
@@ -51,7 +50,7 @@ const RestauranteList = () => {
     });
   };
 
-  // Cargar restaurantes desde el backend (filtrado por "visitado" se realiza en backend)
+  // Función para cargar restaurantes desde el backend (filtrado por "visitado" se hace en backend)
   const cargarRestaurantes = useCallback(async () => {
     try {
       const params = {
@@ -151,6 +150,7 @@ const RestauranteList = () => {
     aplicarFiltros();
   }, [searchTerm, selectedTiposCocina, selectedLocalizacion, activeSort, aplicarFiltros]);
 
+  // Manejo de inputs del formulario de creación/edición
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -210,6 +210,18 @@ const RestauranteList = () => {
     setIsModalOpen(true);
   };
 
+  // Función para manejar el cambio de selección en el dropdown de tipos de cocina
+  const handleTipoCocinaChange = (e) => {
+    const value = e.target.value;
+    setSelectedTiposCocina((prev) => {
+      if (prev.includes(value)) {
+        return prev.filter((v) => v !== value);
+      } else {
+        return [...prev, value];
+      }
+    });
+  };
+
   // Asigna clases a los botones de filtro de visitas según estén activos o no
   const getVisitButtonClass = (filterValue) => {
     return visitadoFilter === filterValue ? "btn btn-primary" : "btn btn-secondary";
@@ -227,7 +239,9 @@ const RestauranteList = () => {
             <input type="text" name="Tipo de cocina" placeholder="Tipo de cocina" value={formData["Tipo de cocina"]} onChange={handleInputChange} required className="input" />
             <input type="text" name="Localización" placeholder="Localización" value={formData["Localización"]} onChange={handleInputChange} required className="input" />
           </div>
-          <button type="submit" className="btn btn-primary">{isEditing ? "Actualizar" : "Crear"} Restaurante</button>
+          <button type="submit" className="btn btn-primary">
+            {isEditing ? "Actualizar" : "Crear"} Restaurante
+          </button>
           {isEditing && (
             <button type="button" onClick={resetForm} className="btn btn-secondary">
               Cancelar
@@ -239,14 +253,37 @@ const RestauranteList = () => {
       {/* Sección de filtros */}
       <div className="filters-section">
         <div className="filter-item">
-          <input type="text" placeholder="Buscar restaurantes..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="search-input" />
+          <input
+            type="text"
+            placeholder="Buscar restaurantes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
         </div>
         <div className="filter-item dropdown-container">
-          <button onClick={() => setSelectedTiposCocina([])} className="dropdown-button">
-            {selectedTiposCocina.length > 0 ? `Seleccionados: ${selectedTiposCocina.join(", ")}` : "Seleccionar Tipos de Cocina"}
+          <button onClick={() => setShowTiposDropdown((prev) => !prev)} className="dropdown-button">
+            {selectedTiposCocina.length > 0
+              ? `Seleccionados: ${selectedTiposCocina.join(", ")}`
+              : "Seleccionar Tipos de Cocina"}
             <span className="dropdown-arrow">▼</span>
           </button>
-          {/* Aquí podrías agregar un dropdown para seleccionar tipos de cocina si lo requieres */}
+          {showTiposDropdown && (
+            <div className="dropdown-menu dropdown-tipos-cocina">
+              {tiposCocina.map((tipo) => (
+                <label key={tipo} className="dropdown-item tipo-cocina-item">
+                  <input
+                    type="checkbox"
+                    value={tipo}
+                    onChange={handleTipoCocinaChange}
+                    checked={selectedTiposCocina.includes(tipo)}
+                    className="checkbox"
+                  />
+                  {tipo}
+                </label>
+              ))}
+            </div>
+          )}
         </div>
         <div className="filter-item dropdown-container">
           <button onClick={() => setShowLocalizacionDropdown((prev) => !prev)} className="dropdown-button">
@@ -257,7 +294,14 @@ const RestauranteList = () => {
             <div className="dropdown-menu dropdown-localizacion">
               {localizaciones.map((loc) => (
                 <label key={loc} className="dropdown-item localizacion-item">
-                  <input type="radio" name="localizacion" value={loc} checked={selectedLocalizacion === loc} onChange={(e) => setSelectedLocalizacion(e.target.value)} className="radio" />
+                  <input
+                    type="radio"
+                    name="localizacion"
+                    value={loc}
+                    checked={selectedLocalizacion === loc}
+                    onChange={(e) => setSelectedLocalizacion(e.target.value)}
+                    className="radio"
+                  />
                   {loc}
                 </label>
               ))}
