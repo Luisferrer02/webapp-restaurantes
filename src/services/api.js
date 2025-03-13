@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const api = axios.create({
   //baseURL: "https://backend-restaurantes-wq8c.onrender.com/api",
-  baseURL: "http://localhost:5001/api",
+  baseURL: "process.env.API_URL",
 });
 
 // Request interceptor to add auth token
