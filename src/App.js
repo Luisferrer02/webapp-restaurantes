@@ -5,6 +5,8 @@ import RestauranteList from "./components/RestauranteList";
 import RestauranteDetails from "./components/RestauranteDetails";
 import Auth from "./components/Auth";
 import { jwtDecode } from "jwt-decode";
+import 'leaflet/dist/leaflet.css';
+
 
 const App = () => {
   const [authenticated, setAuthenticated] = useState(false);
@@ -35,7 +37,7 @@ const App = () => {
     <Router>
       <div>
         {authenticated && (
-          <button onClick={handleLogout} style={{ margin: "10px" }}>
+          <button onClick={handleLogout} style={{ margin: "10px" }} className="logout-button">
             Cerrar Sesión
           </button>
         )}

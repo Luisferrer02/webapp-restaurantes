@@ -5,12 +5,13 @@ import api from "../services/api";
 import "./Restaurante.css";
 import RestauranteDetailsModal from "./RestauranteDetailsModal";
 import LocationSelectionModal from "./LocationSelectionModal"; // Importamos el nuevo modal
+import MapView from "./MapView"; 
 const RestauranteList = () => {
   // States for restaurants and UI features
   const [originalRestaurantes, setOriginalRestaurantes] = useState([]);
   const [filteredRestaurantes, setFilteredRestaurantes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-
+  const [showMap, setShowMap] = useState(false);
   // States for filtering options
   const [tiposCocina, setTiposCocina] = useState([]);
   const [selectedTiposCocina, setSelectedTiposCocina] = useState([]);
@@ -296,6 +297,11 @@ const RestauranteList = () => {
     <div className="container">
       <h2 className="title">Gestión de Restaurantes</h2>
 
+       {/* Botón para ver el mapa */}
+       <button onClick={() => setShowMap(true)} className="btn btn-map">
+        Ver mapa
+      </button>
+
       {/* Toggle button for view mode */}
       <div style={{ marginBottom: "10px" }}>
         <button className="btn btn-secondary" onClick={handleToggleView}>
@@ -361,6 +367,14 @@ const RestauranteList = () => {
         restaurantName={formData.Nombre}
         onSelect={handleLocationSelected} // Asegúrate de que handleLocationSelected esté definido
       />
+
+      {/* Vista de mapa */}
+      {showMap && (
+        <MapView
+          restaurants={filteredRestaurantes}  // O el listado que corresponda
+          onClose={() => setShowMap(false)}
+        />
+      )}
 
       {/* Filters */}
       <div className="filters-section">

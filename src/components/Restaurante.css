@@ -4,6 +4,19 @@
   font-family: Arial, sans-serif;
   background-color: #f9f9f9;
 }
+.btn-map {
+  background-color: #5bc0de;
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+
+.btn-map:hover {
+  background-color: #31b0d5;
+}
 
 /* Title styles */
 .title {

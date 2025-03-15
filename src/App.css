@@ -7,6 +7,21 @@
   pointer-events: none;
 }
 
+.logout-button {
+  background-color: #d9534f;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 10px;
+}
+
+.logout-button:hover {
+  background-color: #c9302c;
+}
+
+
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
     animation: App-logo-spin infinite 20s linear;
