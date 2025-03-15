@@ -1,8 +1,10 @@
+//src/components/RestauranteList.jsx
+
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
 import "./Restaurante.css";
 import RestauranteDetailsModal from "./RestauranteDetailsModal";
-
+import LocationSelectionModal from "./LocationSelectionModal"; // Importamos el nuevo modal
 const RestauranteList = () => {
   // States for restaurants and UI features
   const [originalRestaurantes, setOriginalRestaurantes] = useState([]);
@@ -14,12 +16,16 @@ const RestauranteList = () => {
   const [selectedTiposCocina, setSelectedTiposCocina] = useState([]);
   const [showTiposDropdown, setShowTiposDropdown] = useState(false);
   const [localizaciones, setLocalizaciones] = useState([]);
-  const [showLocalizacionDropdown, setShowLocalizacionDropdown] = useState(false);
+  const [showLocalizacionDropdown, setShowLocalizacionDropdown] =
+    useState(false);
   const [selectedLocalizacion, setSelectedLocalizacion] = useState("");
 
   // Additional filters and sorting
   const [visitadoFilter, setVisitadoFilter] = useState("");
-  const [activeSort, setActiveSort] = useState({ criterion: null, order: null });
+  const [activeSort, setActiveSort] = useState({
+    criterion: null,
+    order: null,
+  });
 
   // Modal and selection states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,22 +41,23 @@ const RestauranteList = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  // Nuevo estado para controlar la apertura del modal de localización
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  // Nuevo estado para almacenar la localización seleccionada
+  const [selectedLocationData, setSelectedLocationData] = useState(null);
+
   // Instead of using a readOnly boolean, we now use viewMode:
   // "private" (full access) or "public" (read-only)
   const [viewMode, setViewMode] = useState("private");
   const [loading, setLoading] = useState(false);
 
-  // Memoized fetch function to load restaurants based on viewMode and visitadoFilter
+  // Fetch function: solo carga los datos, el filtrado se aplica después
   const fetchRestaurantes = useCallback(async () => {
     setLoading(true);
     try {
-      const endpoint = viewMode === "public" ? "/restaurantes/public" : "/restaurantes";
+      const endpoint =
+        viewMode === "public" ? "/restaurantes/public" : "/restaurantes";
       const params = {};
-      if (visitadoFilter === "visitado") {
-        params.visitado = "si";
-      } else if (visitadoFilter === "no-visitado") {
-        params.visitado = "no";
-      }
       const response = await api.get(endpoint, { params });
       console.log("Datos recibidos:", response.data);
       const restaurantes = response.data.restaurantes || [];
@@ -64,26 +71,43 @@ const RestauranteList = () => {
     } finally {
       setLoading(false);
     }
-  }, [viewMode, visitadoFilter]);
+  }, [viewMode]);
 
   // Apply filters and sorting to the original list
   const aplicarFiltros = useCallback(() => {
-    let filtered = [...originalRestaurantes];
+    let filtered = [...originalRestaurantes]; // Declaramos 'filtered' aquí
+
+    // Filtrado por término de búsqueda
     if (searchTerm) {
       filtered = filtered.filter((rest) =>
         rest.Nombre.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
+
+    // Filtrado por tipo de cocina
     if (selectedTiposCocina.length > 0) {
       filtered = filtered.filter((rest) =>
         selectedTiposCocina.includes(rest["Tipo de cocina"])
       );
     }
+
+    // Filtrado por localización
     if (selectedLocalizacion) {
       filtered = filtered.filter(
         (rest) => rest["Localización"] === selectedLocalizacion
       );
     }
+
+    // Filtrado por visitado/no visitado
+    if (visitadoFilter) {
+      filtered = filtered.filter((rest) =>
+        visitadoFilter === "visitado"
+          ? rest.visitas && rest.visitas.length > 0
+          : rest.visitas && rest.visitas.length === 0
+      );
+    }
+
+    // Ordenamiento según criterio activo
     if (activeSort.criterion) {
       filtered.sort((a, b) => {
         let fieldA, fieldB;
@@ -104,47 +128,54 @@ const RestauranteList = () => {
           fieldB = b["Tipo de cocina"];
         }
         if (activeSort.order === "asc") {
-          if (fieldA < fieldB) return -1;
-          if (fieldA > fieldB) return 1;
-          return 0;
+          return fieldA < fieldB ? -1 : fieldA > fieldB ? 1 : 0;
         } else if (activeSort.order === "desc") {
-          if (fieldA > fieldB) return -1;
-          if (fieldA < fieldB) return 1;
-          return 0;
+          return fieldA > fieldB ? -1 : fieldA < fieldB ? 1 : 0;
         }
         return 0;
       });
     }
-    setFilteredRestaurantes(filtered);
-  }, [originalRestaurantes, searchTerm, selectedTiposCocina, selectedLocalizacion, activeSort]);
 
-  // Fetch restaurants when viewMode or visitadoFilter changes
+    setFilteredRestaurantes(filtered);
+  }, [
+    originalRestaurantes,
+    searchTerm,
+    selectedTiposCocina,
+    selectedLocalizacion,
+    visitadoFilter,
+    activeSort,
+  ]);
+
   useEffect(() => {
     fetchRestaurantes();
   }, [fetchRestaurantes]);
 
-  // Update filtering options and apply filters when the list changes
   useEffect(() => {
-    const tipos = [...new Set(originalRestaurantes.map((r) => r["Tipo de cocina"]))].sort((a, b) =>
-      a.localeCompare(b)
-    );
-    const locs = [...new Set(originalRestaurantes.map((r) => r["Localización"]))];
+    const tipos = [
+      ...new Set(originalRestaurantes.map((r) => r["Tipo de cocina"])),
+    ].sort((a, b) => a.localeCompare(b));
+    const locs = [
+      ...new Set(originalRestaurantes.map((r) => r["Localización"])),
+    ];
     setTiposCocina(tipos);
     setLocalizaciones(locs);
     aplicarFiltros();
   }, [originalRestaurantes, aplicarFiltros]);
 
-  // Reapply filters when filtering criteria change
   useEffect(() => {
     aplicarFiltros();
-  }, [searchTerm, selectedTiposCocina, selectedLocalizacion, activeSort, aplicarFiltros]);
+  }, [
+    searchTerm,
+    selectedTiposCocina,
+    selectedLocalizacion,
+    activeSort,
+    aplicarFiltros,
+  ]);
 
-  // Toggle view between "private" and "public"
   const handleToggleView = () => {
     setViewMode((prevMode) => (prevMode === "private" ? "public" : "private"));
   };
 
-  // Toggle sorting order and criterion
   const toggleSort = (criterion) => {
     setActiveSort((prev) => {
       if (prev.criterion !== criterion) {
@@ -178,6 +209,11 @@ const RestauranteList = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Abrir modal de selección de localización (opcional)
+    setShowLocationModal(true);
+  };
+
+  const submitRestaurantCreation = async () => {
     try {
       const dataToSend = {
         Nombre: formData.Nombre,
@@ -185,6 +221,14 @@ const RestauranteList = () => {
         Localización: formData["Localización"],
         Fecha: formData.Fecha || "",
       };
+      // Si se ha seleccionado una localización, la incluimos
+      if (selectedLocationData) {
+        dataToSend.location = {
+          type: "Point",
+          coordinates: selectedLocationData.geometry.coordinates, // [lon, lat]
+          place_name: selectedLocationData.place_name,
+        };
+      }
       if (isEditing && editingId) {
         await api.put(`/restaurantes/${editingId}`, dataToSend);
       } else {
@@ -192,9 +236,16 @@ const RestauranteList = () => {
       }
       await fetchRestaurantes();
       resetForm();
+      setSelectedLocationData(null);
     } catch (error) {
       alert(`Error: ${error.response?.data?.message || error.message}`);
     }
+  };
+
+  const handleLocationSelected = (feature) => {
+    setSelectedLocationData(feature);
+    // Una vez seleccionada la ubicación, enviar la creación del restaurante
+    submitRestaurantCreation();
   };
 
   const handleDelete = async (id) => {
@@ -203,7 +254,9 @@ const RestauranteList = () => {
         await api.delete(`/restaurantes/${id}`);
         fetchRestaurantes();
       } catch (error) {
-        alert(`Error al eliminar: ${error.response?.data?.message || error.message}`);
+        alert(
+          `Error al eliminar: ${error.response?.data?.message || error.message}`
+        );
       }
     }
   };
@@ -228,17 +281,15 @@ const RestauranteList = () => {
 
   const handleTipoCocinaChange = (e) => {
     const value = e.target.value;
-    setSelectedTiposCocina((prev) => {
-      if (prev.includes(value)) {
-        return prev.filter((v) => v !== value);
-      } else {
-        return [...prev, value];
-      }
-    });
+    setSelectedTiposCocina((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
   };
 
   const getVisitButtonClass = (filterValue) => {
-    return visitadoFilter === filterValue ? "btn btn-primary" : "btn btn-secondary";
+    return visitadoFilter === filterValue
+      ? "btn btn-primary"
+      : "btn btn-secondary";
   };
 
   return (
@@ -248,7 +299,9 @@ const RestauranteList = () => {
       {/* Toggle button for view mode */}
       <div style={{ marginBottom: "10px" }}>
         <button className="btn btn-secondary" onClick={handleToggleView}>
-          {viewMode === "private" ? "Ver lista pública" : "Ver mis restaurantes"}
+          {viewMode === "private"
+            ? "Ver lista pública"
+            : "Ver mis restaurantes"}
         </button>
       </div>
 
@@ -289,13 +342,25 @@ const RestauranteList = () => {
               {isEditing ? "Actualizar" : "Crear"} Restaurante
             </button>
             {isEditing && (
-              <button type="button" onClick={resetForm} className="btn btn-secondary">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="btn btn-secondary"
+              >
                 Cancelar
               </button>
             )}
           </form>
         </div>
       )}
+
+      {/* Modal para seleccionar la localización (opcional) */}
+      <LocationSelectionModal
+        isOpen={showLocationModal}
+        onClose={() => setShowLocationModal(false)}
+        restaurantName={formData.Nombre}
+        onSelect={handleLocationSelected} // Asegúrate de que handleLocationSelected esté definido
+      />
 
       {/* Filters */}
       <div className="filters-section">
@@ -309,7 +374,10 @@ const RestauranteList = () => {
           />
         </div>
         <div className="filter-item dropdown-container">
-          <button onClick={() => setShowTiposDropdown((prev) => !prev)} className="dropdown-button">
+          <button
+            onClick={() => setShowTiposDropdown((prev) => !prev)}
+            className="dropdown-button"
+          >
             {selectedTiposCocina.length > 0
               ? `Seleccionados: ${selectedTiposCocina.join(", ")}`
               : "Seleccionar Tipos de Cocina"}
@@ -333,7 +401,10 @@ const RestauranteList = () => {
           )}
         </div>
         <div className="filter-item dropdown-container">
-          <button onClick={() => setShowLocalizacionDropdown((prev) => !prev)} className="dropdown-button">
+          <button
+            onClick={() => setShowLocalizacionDropdown((prev) => !prev)}
+            className="dropdown-button"
+          >
             {selectedLocalizacion || "Seleccionar Localización"}
             <span className="dropdown-arrow">▼</span>
           </button>
@@ -360,18 +431,34 @@ const RestauranteList = () => {
       {/* Visit filter and sorting */}
       <div className="visit-sort-section">
         <div className="visit-buttons">
-          <button onClick={() => setVisitadoFilter("")} className={getVisitButtonClass("")}>
+          <button
+            onClick={() => setVisitadoFilter("")}
+            className={getVisitButtonClass("")}
+          >
             Todos
           </button>
-          <button onClick={() => setVisitadoFilter("visitado")} className={getVisitButtonClass("visitado")}>
+          <button
+            onClick={() => setVisitadoFilter("visitado")}
+            className={getVisitButtonClass("visitado")}
+          >
             Visitados
           </button>
-          <button onClick={() => setVisitadoFilter("no-visitado")} className={getVisitButtonClass("no-visitado")}>
+          <button
+            onClick={() => setVisitadoFilter("no-visitado")}
+            className={getVisitButtonClass("no-visitado")}
+          >
             No Visitados
           </button>
         </div>
         <div className="sort-section">
-          <button onClick={() => toggleSort("fecha")} className={activeSort.criterion === "fecha" ? "btn btn-primary" : "btn btn-secondary"}>
+          <button
+            onClick={() => toggleSort("fecha")}
+            className={
+              activeSort.criterion === "fecha"
+                ? "btn btn-primary"
+                : "btn btn-secondary"
+            }
+          >
             Ordenar por Fecha{" "}
             {activeSort.criterion === "fecha"
               ? activeSort.order === "asc"
@@ -381,7 +468,14 @@ const RestauranteList = () => {
                 : ""
               : ""}
           </button>
-          <button onClick={() => toggleSort("nombre")} className={activeSort.criterion === "nombre" ? "btn btn-primary" : "btn btn-secondary"}>
+          <button
+            onClick={() => toggleSort("nombre")}
+            className={
+              activeSort.criterion === "nombre"
+                ? "btn btn-primary"
+                : "btn btn-secondary"
+            }
+          >
             Ordenar por Nombre{" "}
             {activeSort.criterion === "nombre"
               ? activeSort.order === "asc"
@@ -391,7 +485,14 @@ const RestauranteList = () => {
                 : ""
               : ""}
           </button>
-          <button onClick={() => toggleSort("tipo")} className={activeSort.criterion === "tipo" ? "btn btn-primary" : "btn btn-secondary"}>
+          <button
+            onClick={() => toggleSort("tipo")}
+            className={
+              activeSort.criterion === "tipo"
+                ? "btn btn-primary"
+                : "btn btn-secondary"
+            }
+          >
             Ordenar por Tipo de Cocina{" "}
             {activeSort.criterion === "tipo"
               ? activeSort.order === "asc"
@@ -406,7 +507,9 @@ const RestauranteList = () => {
 
       {/* Results count */}
       <div className="results-count">
-        <p>{`Resultados: ${filteredRestaurantes ? filteredRestaurantes.length : 0}`}</p>
+        <p>{`Resultados: ${
+          filteredRestaurantes ? filteredRestaurantes.length : 0
+        }`}</p>
       </div>
 
       {/* Restaurant list */}
@@ -424,7 +527,8 @@ const RestauranteList = () => {
               <div className="restaurant-info">
                 <h3 className="restaurant-title">{restaurante.Nombre}</h3>
                 <p className="restaurant-details">
-                  {restaurante["Tipo de cocina"]} - {restaurante["Localización"]}{" "}
+                  {restaurante["Tipo de cocina"]} -{" "}
+                  {restaurante["Localización"]}{" "}
                   {restaurante.visitas?.length > 0
                     ? `- ${restaurante.visitas.length} visita(s)`
                     : "- No visitado"}

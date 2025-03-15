@@ -1,4 +1,4 @@
-// RestauranteDetailsModal.jsx
+// src/components/RestauranteDetailsModal.jsx
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
 import "./RestauranteDetailsModal.css"; // Asegúrate de crear este archivo de estilos

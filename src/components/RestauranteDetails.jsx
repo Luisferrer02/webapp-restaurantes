@@ -39,9 +39,9 @@ const RestauranteDetails = () => {
             <p className="restaurante-cuisine">{restaurante['Tipo de cocina']}</p>
             <p className="restaurante-location">{restaurante['Localización']}</p>
             <ul className="visit-list">
-                {restaurante.fechasVisita.map((fecha, index) => (
+                {restaurante.visitas?.map((visita, index) => (
                     <li key={index} className="visit-date">
-                        {new Date(fecha).toLocaleDateString()}
+                        {new Date(visita.fecha).toLocaleDateString()}
                     </li>
                 ))}
             </ul>
