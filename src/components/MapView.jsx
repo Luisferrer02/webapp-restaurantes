@@ -8,19 +8,19 @@ import './MapView.css';
 // const restaurantMarkerImg = '/assets/restaurant-marker.png';
 
 // Si tus imágenes están en "src/assets" y tu bundler lo soporta, puedes importarlas así:
-// import userMarkerImg from '../assets/user-marker.png';
-// import restaurantMarkerImg from '../assets/restaurant-marker.png';
+import userMarkerImg from '../assets/user-marker.png';
+import restaurantMarkerImg from '../assets/restaurant-marker.png';
 
 // Definimos el ícono para la ubicación del usuario
 const userIcon = L.icon({
-  iconUrl: '/assets/user-marker.png',   // Cambia según tu proyecto
+  iconUrl: userMarkerImg,   // Cambia según tu proyecto
   iconSize: [25, 41],  // Ajusta el tamaño a tu imagen
   iconAnchor: [12, 41] // El punto de anclaje del icono (normalmente la "punta")
 });
 
 // Definimos el ícono para los restaurantes
 const restaurantIcon = L.icon({
-  iconUrl: '/assets/restaurant-marker.png', // Cambia según tu proyecto
+  iconUrl: restaurantMarkerImg, // Cambia según tu proyecto
   iconSize: [25, 41],
   iconAnchor: [12, 41]
 });
