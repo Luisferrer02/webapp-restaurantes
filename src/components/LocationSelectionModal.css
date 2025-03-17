@@ -1,4 +1,3 @@
-/* src/components/LocationSelectionModal.css */
 .location-modal-overlay {
     position: fixed;
     top: 0;
@@ -59,16 +58,21 @@
     background-color: #c9302c;
   }
   
+  /* Aquí definimos la altura máxima y el scroll para la lista */
   .suggestions-list {
     list-style: none;
     padding: 0;
-    margin: 0;
+    margin: 10px 0;
+    max-height: 300px; /* Ajusta a la altura que desees */
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
   }
   
   .suggestion-item {
     padding: 8px;
-    border-bottom: 1px solid #ccc;
     cursor: pointer;
+    border-bottom: 1px solid #eee;
   }
   
   .suggestion-item:hover {

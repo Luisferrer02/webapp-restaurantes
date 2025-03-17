@@ -1,33 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import './MapView.css';
 
-// Si tus imágenes están en "public/assets", usa rutas absolutas:
-// const userMarkerImg = '/assets/user-marker.png';
-// const restaurantMarkerImg = '/assets/restaurant-marker.png';
-
-// Si tus imágenes están en "src/assets" y tu bundler lo soporta, puedes importarlas así:
 import userMarkerImg from '../assets/user-marker.png';
 import restaurantMarkerImg from '../assets/restaurant-marker.png';
 
-// Definimos el ícono para la ubicación del usuario
+// Iconos de ejemplo (ajusta la ruta o importa tus propias imágenes)
 const userIcon = L.icon({
-  iconUrl: userMarkerImg,   // Cambia según tu proyecto
-  iconSize: [25, 41],  // Ajusta el tamaño a tu imagen
-  iconAnchor: [12, 41] // El punto de anclaje del icono (normalmente la "punta")
+  iconUrl: userMarkerImg,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
 });
-
-// Definimos el ícono para los restaurantes
 const restaurantIcon = L.icon({
-  iconUrl: restaurantMarkerImg, // Cambia según tu proyecto
+  iconUrl: restaurantMarkerImg,
   iconSize: [25, 41],
   iconAnchor: [12, 41]
 });
 
+// Componente para obtener la instancia del mapa y guardarla en el padre
+function MapInstanceSetter({ setMapRef }) {
+  const map = useMap();
+  useEffect(() => {
+    setMapRef(map);
+  }, [map, setMapRef]);
+  return null;
+}
+
 const MapView = ({ restaurants, onClose }) => {
   const [userLocation, setUserLocation] = useState(null);
   const [sortedRestaurants, setSortedRestaurants] = useState([]);
+  const [mapRef, setMapRef] = useState(null); // Referencia al mapa para moverlo al hacer clic en la lista
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
 
   // Obtener la localización actual del usuario
   useEffect(() => {
@@ -39,13 +43,13 @@ const MapView = ({ restaurants, onClose }) => {
         },
         err => {
           console.error("Error al obtener localización", err);
-          // Localización por defecto (por ejemplo, Madrid)
-          setUserLocation([40.416775, -3.70379]);
+          // Localización por defecto
+          setUserLocation([40.416775, -3.70379]); // Madrid
         }
       );
     } else {
-      // Si el navegador no soporta geolocalización
-      setUserLocation([40.416775, -3.70379]);
+      // Si no está disponible la geolocalización
+      setUserLocation([40.416775, -3.70379]); // Madrid
     }
   }, []);
 
@@ -59,7 +63,7 @@ const MapView = ({ restaurants, onClose }) => {
               Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
               Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distancia en km
+    return R * c; // distancia en km
   };
 
   // Ordenar restaurantes por distancia al usuario
@@ -79,45 +83,95 @@ const MapView = ({ restaurants, onClose }) => {
     }
   }, [userLocation, restaurants]);
 
-  if (!userLocation) return <div>Cargando mapa...</div>;
+  // Manejar el clic en un restaurante de la lista: centrar el mapa en ese restaurante
+const handleListItemClick = (restaurant) => {
+    setSelectedRestaurant(restaurant);
+    if (mapRef) {
+      const [lng, lat] = restaurant.location.coordinates;
+      // Zoom más cercano (por ejemplo, 17)
+      mapRef.flyTo([lat, lng], 17);
+    }
+  };
+
+  if (!userLocation) {
+    return <div>Cargando mapa...</div>;
+  }
 
   return (
-    <div className="map-view-container">
-      <button className="close-map-button" onClick={onClose}>Cerrar Mapa</button>
-      <MapContainer
-        center={userLocation}
-        zoom={13}
-        scrollWheelZoom={true}
-        className="map-container"
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {/* Marcador para la ubicación del usuario */}
-        <Marker position={userLocation} icon={userIcon}>
-          <Popup>Tu ubicación</Popup>
-        </Marker>
-        {/* Marcadores para cada restaurante */}
-        {sortedRestaurants.map(r => {
-          const [lng, lat] = r.location.coordinates; // [longitud, latitud]
-          return (
-            <Marker key={r._id} position={[lat, lng]} icon={restaurantIcon}>
-              <Popup>
-                <strong>{r.Nombre}</strong><br/>
-                {r['Localización']}<br/>
-                {r.distance && `Distancia: ${r.distance.toFixed(2)} km`}
-              </Popup>
-            </Marker>
-          );
-        })}
-      </MapContainer>
-      <div className="restaurant-list-map">
+    <div className="map-list-container">
+      <button className="close-map-button" onClick={onClose}>
+        Cerrar Mapa
+      </button>
+
+      {/* Sección del mapa */}
+      <div className="map-wrapper">
+        <MapContainer
+          center={userLocation}
+          zoom={13}
+          scrollWheelZoom={true}
+          className="map-container"
+        >
+          {/* Guardamos la referencia al mapa */}
+          <MapInstanceSetter setMapRef={setMapRef} />
+
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+
+          {/* Marcador de la ubicación del usuario */}
+          <Marker position={userLocation} icon={userIcon}>
+            <Popup>Tu ubicación</Popup>
+          </Marker>
+
+          {/* Marcadores de los restaurantes */}
+          {sortedRestaurants.map(r => {
+            const [lng, lat] = r.location.coordinates;
+            return (
+              <Marker key={r._id} position={[lat, lng]} icon={restaurantIcon}>
+                <Popup>
+                  <strong>{r.Nombre}</strong><br/>
+                  {r['Localización']}<br/>
+                  {r.distance && `Distancia: ${r.distance.toFixed(2)} km`}
+                </Popup>
+              </Marker>
+            );
+          })}
+
+{selectedRestaurant && (
+            <Popup
+              position={[
+                selectedRestaurant.location.coordinates[1],
+                selectedRestaurant.location.coordinates[0]
+              ]}
+              onClose={() => setSelectedRestaurant(null)}
+            >
+              <div>
+                <strong>{selectedRestaurant.Nombre}</strong><br/>
+                {selectedRestaurant["Localización"]}<br/>
+                {selectedRestaurant["Tipo de cocina"]}<br/>
+                {selectedRestaurant.visitas && selectedRestaurant.visitas.length > 0 &&
+                  <span>{selectedRestaurant.visitas.length} visita(s)</span>}
+              </div>
+            </Popup>
+          )}
+        </MapContainer>
+      </div>
+
+      {/* Sección de la lista */}
+      <div className="list-wrapper">
         <h3>Restaurantes cercanos</h3>
-        <ul>
+        <ul className="restaurant-list">
           {sortedRestaurants.map(r => (
-            <li key={r._id}>
-              {r.Nombre} - {r.distance ? r.distance.toFixed(2) : 'N/A'} km
+            <li
+              key={r._id}
+              className="restaurant-item"
+              onClick={() => handleListItemClick(r)}
+            >
+              <strong>{r.Nombre}</strong>
+              {r.distance && ` - ${r.distance.toFixed(2)} km`}
+              <br />
+              <small>{r['Localización']}</small>
             </li>
           ))}
         </ul>

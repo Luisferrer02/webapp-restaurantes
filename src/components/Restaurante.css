@@ -1,16 +1,63 @@
 /* General container */
 .container {
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 20px;
   font-family: Arial, sans-serif;
   background-color: #f9f9f9;
 }
+
+/* Button styles */
+.btn {
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 5px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #495057;
+}
+
+.btn-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #218838;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
 .btn-map {
   background-color: #5bc0de;
   color: #fff;
-  border: none;
   padding: 10px 15px;
-  border-radius: 4px;
-  cursor: pointer;
   margin-bottom: 15px;
 }
 
@@ -58,53 +105,6 @@
   box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
-/* Button styles */
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin: 5px;
-  font-size: 14px;
-}
-
-.btn-primary {
-  background-color: #007bff;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #0056b3;
-}
-
-.btn-secondary {
-  background-color: #6c757d;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background-color: #495057;
-}
-
-.btn-success {
-  background-color: #28a745;
-  color: white;
-}
-
-.btn-success:hover {
-  background-color: #218838;
-}
-
-.btn-danger {
-  background-color: #dc3545;
-  color: white;
-}
-
-.btn-danger:hover {
-  background-color: #c82333;
-}
-
 /* Filters Section */
 .filters-section {
   display: grid;
@@ -129,7 +129,7 @@
   font-size: 14px;
 }
 
-/* Unificado: Dropdown styles */
+/* Dropdown styles */
 .dropdown-container {
   position: relative;
 }
@@ -186,7 +186,7 @@
   transform: scale(1.2);
 }
 
-/* Botones específicos de filtro */
+/* Filter buttons */
 .filter-buttons {
   display: flex;
   gap: 10px;
@@ -268,8 +268,67 @@
     width: 100%;
     justify-content: flex-start;
   }
+
+  .form-inputs {
+    flex-direction: column;
+  }
+
+  .auto-search-container {
+    padding: 10px;
+  }
 }
-/* Nueva sección para botones de visita y ordenación */
+
+/* Auto-search section */
+.auto-search-container {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.auto-search-container h3 {
+  margin-top: 0;
+}
+
+.auto-search-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.auto-search-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.auto-search-item:last-child {
+  border-bottom: none;
+}
+
+.auto-search-place {
+  margin: 0;
+  flex: 1;
+}
+
+.refine-container {
+  display: flex;
+  margin-top: 10px;
+}
+
+.refine-input {
+  flex: 1;
+  margin-right: 10px;
+}
+
+/* Visit and sort section */
 .visit-sort-section {
   display: flex;
   flex-direction: column;
@@ -278,16 +337,8 @@
   margin-bottom: 30px;
 }
 
-/* Botones de visitas (Todos, Visitados, No Visitados) en horizontal */
 .visit-buttons {
   display: flex;
   gap: 10px;
-  justify-content: center;
-}
-
-/* Botones para ordenación */
-.sort-section {
-  display: flex;
-  gap: 15px;
   justify-content: center;
 }

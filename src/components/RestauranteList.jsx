@@ -5,7 +5,7 @@ import api from "../services/api";
 import "./Restaurante.css";
 import RestauranteDetailsModal from "./RestauranteDetailsModal";
 import LocationSelectionModal from "./LocationSelectionModal"; // Importamos el nuevo modal
-import MapView from "./MapView"; 
+import MapView from "./MapView";
 const RestauranteList = () => {
   // States for restaurants and UI features
   const [originalRestaurantes, setOriginalRestaurantes] = useState([]);
@@ -45,13 +45,15 @@ const RestauranteList = () => {
   // Nuevo estado para controlar la apertura del modal de localización
   const [showLocationModal, setShowLocationModal] = useState(false);
   // Nuevo estado para almacenar la localización seleccionada
-  const [selectedLocationData, setSelectedLocationData] = useState(null);
 
   // Instead of using a readOnly boolean, we now use viewMode:
   // "private" (full access) or "public" (read-only)
   const [viewMode, setViewMode] = useState("private");
   const [loading, setLoading] = useState(false);
-
+  const [autoSearchResults, setAutoSearchResults] = useState([]);
+  const [showAutoSearch, setShowAutoSearch] = useState(false);
+  const [refineQuery, setRefineQuery] = useState("");
+  const [pendingRestaurantData, setPendingRestaurantData] = useState(null);
   // Fetch function: solo carga los datos, el filtrado se aplica después
   const fetchRestaurantes = useCallback(async () => {
     setLoading(true);
@@ -210,45 +212,108 @@ const RestauranteList = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Abrir modal de selección de localización (opcional)
-    setShowLocationModal(true);
+
+    // Construimos la query para Google Places
+    const textQuery =
+      `restaurante ${formData.Nombre} ${formData["Localización"]}`.trim();
+    try {
+      setLoading(true);
+      // Llamamos a Google Places
+      const response = await api.post("/googleplaces/search", { textQuery });
+      setAutoSearchResults(response.data.features || []);
+      setShowAutoSearch(true); // Mostramos la sección de auto-búsqueda
+      setPendingRestaurantData({ ...formData }); // Guardamos los datos del formulario
+    } catch (err) {
+      alert(
+        "Error al buscar localización: " +
+          (err.response?.data?.message || err.message)
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const submitRestaurantCreation = async () => {
+  const submitRestaurantCreation = async (locationData) => {
     try {
+      // Si tenemos pendingRestaurantData (flujo auto-búsqueda), lo usamos.
+      // En caso contrario, usamos formData (flujo normal).
+      const source = pendingRestaurantData || formData;
       const dataToSend = {
-        Nombre: formData.Nombre,
-        "Tipo de cocina": formData["Tipo de cocina"],
-        Localización: formData["Localización"],
-        Fecha: formData.Fecha || "",
+        Nombre: source.Nombre,
+        "Tipo de cocina": source["Tipo de cocina"],
+        Localización: source["Localización"],
+        Fecha: source.Fecha || "",
       };
-      // Si se ha seleccionado una localización, la incluimos
-      if (selectedLocationData) {
-        dataToSend.location = {
-          type: "Point",
-          coordinates: selectedLocationData.geometry.coordinates, // [lon, lat]
-          place_name: selectedLocationData.place_name,
-        };
+
+      // Si nos pasan locationData, lo añadimos
+      if (locationData) {
+        dataToSend.location = locationData;
       }
+      // (Seguimos respetando la edición o creación)
       if (isEditing && editingId) {
         await api.put(`/restaurantes/${editingId}`, dataToSend);
       } else {
         await api.post("/restaurantes", dataToSend);
       }
+
       await fetchRestaurantes();
       resetForm();
-      setSelectedLocationData(null);
+
+      // Cerramos el flujo de auto-búsqueda
+      setShowAutoSearch(false);
+      setAutoSearchResults([]);
+      setPendingRestaurantData(null);
     } catch (error) {
       alert(`Error: ${error.response?.data?.message || error.message}`);
     }
   };
-
-  const handleLocationSelected = (feature) => {
-    setSelectedLocationData(feature);
-    // Una vez seleccionada la ubicación, enviar la creación del restaurante
-    submitRestaurantCreation();
+  const handleSelectAutoLocation = (feature) => {
+    const coordinates = feature.geometry?.coordinates || [];
+    const place_name = feature.place_name || "";
+    // Creamos un objeto GeoJSON con la localización
+    const locationData = {
+      type: "Point",
+      coordinates,
+      place_name,
+    };
+    // Llamamos a la función de creación, pasándole la localización elegida
+    submitRestaurantCreation(locationData);
+  };
+  const handleRefineSearch = async () => {
+    if (!refineQuery) return;
+    try {
+      setLoading(true);
+      const response = await api.post("/googleplaces/search", {
+        textQuery: refineQuery,
+      });
+      setAutoSearchResults(response.data.features || []);
+    } catch (err) {
+      alert(
+        "Error al refinar búsqueda: " +
+          (err.response?.data?.message || err.message)
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleCancelAutoSearch = () => {
+    setShowAutoSearch(false);
+    setAutoSearchResults([]);
+    setPendingRestaurantData(null);
+    resetForm();
   };
 
+  const handleLocationSelected = (feature) => {
+    const coordinates = feature.geometry?.coordinates || [];
+    const place_name = feature.place_name || "";
+    const locationData = {
+      type: "Point",
+      coordinates,
+      place_name,
+    };
+    submitRestaurantCreation(locationData);
+  };
+  
   const handleDelete = async (id) => {
     if (window.confirm("¿Estás seguro de querer eliminar este restaurante?")) {
       try {
@@ -297,8 +362,8 @@ const RestauranteList = () => {
     <div className="container">
       <h2 className="title">Gestión de Restaurantes</h2>
 
-       {/* Botón para ver el mapa */}
-       <button onClick={() => setShowMap(true)} className="btn btn-map">
+      {/* Botón para ver el mapa */}
+      <button onClick={() => setShowMap(true)} className="btn btn-map">
         Ver mapa
       </button>
 
@@ -359,6 +424,45 @@ const RestauranteList = () => {
           </form>
         </div>
       )}
+      {showAutoSearch && (
+        <div className="auto-search-container">
+          <h3>
+            Posibles localizaciones para "{pendingRestaurantData?.Nombre}"
+          </h3>
+          {loading && <p>Cargando resultados...</p>}
+
+          <ul className="auto-search-results">
+            {autoSearchResults.map((feature, idx) => (
+              <li key={idx} className="auto-search-item">
+                <p className="auto-search-place">{feature.place_name}</p>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => handleSelectAutoLocation(feature)}
+                >
+                  Seleccionar
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <div className="refine-container">
+            <input
+              type="text"
+              placeholder="Refinar búsqueda..."
+              value={refineQuery}
+              onChange={(e) => setRefineQuery(e.target.value)}
+              className="input refine-input"
+            />
+            <button className="btn btn-secondary" onClick={handleRefineSearch}>
+              Buscar
+            </button>
+          </div>
+
+          <button className="btn btn-danger" onClick={handleCancelAutoSearch}>
+            Cancelar
+          </button>
+        </div>
+      )}
 
       {/* Modal para seleccionar la localización (opcional) */}
       <LocationSelectionModal
@@ -371,7 +475,7 @@ const RestauranteList = () => {
       {/* Vista de mapa */}
       {showMap && (
         <MapView
-          restaurants={filteredRestaurantes}  // O el listado que corresponda
+          restaurants={filteredRestaurantes} // O el listado que corresponda
           onClose={() => setShowMap(false)}
         />
       )}
