@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: "https://backend-restaurantes-wq8c.onrender.com/api",
+  baseURL: "backend-restaurantes.railway.internal/api",
 });
 
 // Request interceptor to add auth token
