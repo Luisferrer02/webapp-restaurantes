@@ -1,14 +1,13 @@
-// src/services/api.js
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: "backend-restaurantes.railway.internal/api",
+  baseURL: process.env.RAILWAY_URL || "http://localhost:5001/api",  // si usas React
+  // o si usas Next.js:
+  // baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5001/api",
 });
 
-// Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    // Only add token for non-public endpoints
     if (!config.url.includes('/public')) {
       const token = localStorage.getItem('token');
       if (token) {
@@ -20,14 +19,11 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle auth errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Handle token expiration
       localStorage.removeItem('token');
-      // Optionally redirect to login
     }
     return Promise.reject(error);
   }
