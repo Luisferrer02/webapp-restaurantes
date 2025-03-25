@@ -1,9 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.RAILWAY_URL || "http://localhost:5001/api",  // si usas React
-  // o si usas Next.js:
-  // baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5001/api",
+  baseURL: process.env.RAILWAY_URL// || "http://localhost:5001/api",  // si usas React
+
 });
 
 api.interceptors.request.use(
