@@ -1,9 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.RAILWAY_URL// || "http://localhost:5001/api",  // si usas React
-
+  baseURL: process.env.REACT_APP_RAILWAY_URL,
 });
+
 
 api.interceptors.request.use(
   (config) => {
